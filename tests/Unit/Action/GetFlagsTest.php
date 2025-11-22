@@ -4,6 +4,8 @@ namespace Moonspot\Phlag\Tests\Unit\Action;
 
 use Moonspot\Phlag\Action\GetFlags;
 use Moonspot\Phlag\Data\Phlag;
+use Moonspot\Phlag\Data\PhlagEnvironment;
+use Moonspot\Phlag\Data\PhlagEnvironmentValue;
 use Moonspot\Phlag\Data\Repository;
 use PHPUnit\Framework\TestCase;
 
@@ -12,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  *
  * This test suite verifies the behavior of the GetFlags action which
  * retrieves all flags with complete details including name, type, evaluated
- * value, and temporal constraints in ISO 8601 format.
+ * value, and temporal constraints in ISO 8601 format for a specific environment.
  *
  * @package Moonspot\Phlag\Tests\Unit\Action
  */
@@ -21,55 +23,139 @@ class GetFlagsTest extends TestCase {
     /**
      * Creates a test phlag object
      *
-     * @param int     $phlag_id        Phlag ID
-     * @param string  $name            Flag name
-     * @param string  $type            Flag type
-     * @param ?string $value           Flag value
-     * @param ?string $start_datetime  Start datetime or null
-     * @param ?string $end_datetime    End datetime or null
+     * @param int    $phlag_id Phlag ID
+     * @param string $name     Flag name
+     * @param string $type     Flag type
      *
      * @return Phlag Test phlag object
      */
     protected function createPhlag(
         int $phlag_id,
         string $name,
-        string $type = 'SWITCH',
-        ?string $value = 'true',
-        ?string $start_datetime = null,
-        ?string $end_datetime = null
+        string $type = 'SWITCH'
     ): Phlag {
         $phlag = new Phlag();
         $phlag->phlag_id = $phlag_id;
         $phlag->name = $name;
         $phlag->type = $type;
-        $phlag->value = $value;
-        $phlag->start_datetime = $start_datetime;
-        $phlag->end_datetime = $end_datetime;
 
         return $phlag;
     }
 
     /**
-     * Creates a mock repository
+     * Creates a test environment object
      *
-     * @param array $results Results to return from find()
+     * @param string $name Environment name
+     *
+     * @return PhlagEnvironment Test environment object
+     */
+    protected function createEnvironment(string $name = 'production'): PhlagEnvironment {
+        $env = new PhlagEnvironment();
+        $env->phlag_environment_id = 1;
+        $env->name = $name;
+
+        return $env;
+    }
+
+    /**
+     * Creates a test environment value object
+     *
+     * @param int     $phlag_id       Phlag ID
+     * @param ?string $value          Flag value
+     * @param ?string $start_datetime Start datetime or null
+     * @param ?string $end_datetime   End datetime or null
+     *
+     * @return PhlagEnvironmentValue Test environment value object
+     */
+    protected function createEnvironmentValue(
+        int $phlag_id,
+        ?string $value = 'true',
+        ?string $start_datetime = null,
+        ?string $end_datetime = null
+    ): PhlagEnvironmentValue {
+        $env_value = new PhlagEnvironmentValue();
+        $env_value->phlag_environment_value_id = $phlag_id;
+        $env_value->phlag_id = $phlag_id;
+        $env_value->phlag_environment_id = 1;
+        $env_value->value = $value;
+        $env_value->start_datetime = $start_datetime;
+        $env_value->end_datetime = $end_datetime;
+
+        return $env_value;
+    }
+
+    /**
+     * Creates a mock repository for testing GetFlags
+     *
+     * This helper creates a repository mock that returns the provided phlags
+     * and environment values. The phlags array should map phlag_id => Phlag object.
+     * The env_values array should map phlag_id => PhlagEnvironmentValue object.
+     *
+     * @param array $phlags     Array of Phlag objects keyed by phlag_id
+     * @param array $env_values Array of PhlagEnvironmentValue objects keyed by phlag_id
      *
      * @return Repository Mock repository
      */
-    protected function createMockRepository(array $results): Repository {
+    protected function createMockRepository(array $phlags, array $env_values = []): Repository {
+        $env = $this->createEnvironment('production');
+        
         $repository = $this->createMock(Repository::class);
         $repository->method('find')
-            ->willReturn($results);
+            ->willReturnCallback(function($entity, $criteria) use ($phlags, $env_values, $env) {
+                if ($entity === 'PhlagEnvironment') {
+                    return [1 => $env];
+                } elseif ($entity === 'Phlag') {
+                    return $phlags;
+                } elseif ($entity === 'PhlagEnvironmentValue') {
+                    $phlag_id = $criteria['phlag_id'] ?? null;
+                    if ($phlag_id !== null && isset($env_values[$phlag_id])) {
+                        return [$phlag_id => $env_values[$phlag_id]];
+                    }
+                    return [];
+                }
+                return [];
+            });
 
         return $repository;
+    }
+
+    /**
+     * Creates a GetFlags action with authentication bypassed
+     *
+     * This helper method creates a partial mock that stubs the
+     * authenticateApiKey method to return null (success) so tests can
+     * run without actual API keys.
+     *
+     * @return GetFlags Action instance with auth bypassed
+     */
+    protected function createActionWithAuthBypass(): GetFlags {
+        $action = $this->getMockBuilder(GetFlags::class)
+            ->onlyMethods(['authenticateApiKey'])
+            ->getMock();
+        $action->method('authenticateApiKey')
+            ->willReturn(null);
+
+        return $action;
     }
 
     /**
      * Tests loading data when no flags exist returns empty array
      */
     public function testLoadDataNoFlagsReturnsEmptyArray(): void {
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        
+        $repository = $this->createMock(Repository::class);
+        $repository->method('find')
+            ->willReturnCallback(function($entity, $criteria) {
+                if ($entity === 'PhlagEnvironment') {
+                    $env = new \Moonspot\Phlag\Data\PhlagEnvironment();
+                    $env->phlag_environment_id = 1;
+                    $env->name = 'production';
+                    return [1 => $env];
+                }
+                return [];
+            });
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -87,17 +173,25 @@ class GetFlagsTest extends TestCase {
      * Tests loading single active flag returns complete details
      */
     public function testLoadDataSingleFlagWithDetails(): void {
-        $phlag = $this->createPhlag(
-            1,
-            'feature_checkout',
-            'SWITCH',
-            'true',
-            '2024-01-01 00:00:00',
-            '2099-12-31 23:59:59'
-        );
+        $phlag = $this->createPhlag(1, 'feature_checkout', 'SWITCH');
+        $env = $this->createEnvironment('production');
+        $env_value = $this->createEnvironmentValue(1, 'true', '2024-01-01 00:00:00', '2099-12-31 23:59:59');
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        
+        $repository = $this->createMock(Repository::class);
+        $repository->method('find')
+            ->willReturnCallback(function($entity, $criteria) use ($phlag, $env, $env_value) {
+                if ($entity === 'PhlagEnvironment') {
+                    return [1 => $env];
+                } elseif ($entity === 'Phlag') {
+                    return [1 => $phlag];
+                } elseif ($entity === 'PhlagEnvironmentValue') {
+                    return [1 => $env_value];
+                }
+                return [];
+            });
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -128,14 +222,22 @@ class GetFlagsTest extends TestCase {
      */
     public function testLoadDataMultipleFlagsAllTypes(): void {
         $phlags = [
-            1 => $this->createPhlag(1, 'feature_flag', 'SWITCH', 'true'),
-            2 => $this->createPhlag(2, 'max_items', 'INTEGER', '100'),
-            3 => $this->createPhlag(3, 'multiplier', 'FLOAT', '1.5'),
-            4 => $this->createPhlag(4, 'message', 'STRING', 'Hello'),
+            1 => $this->createPhlag(1, 'feature_flag', 'SWITCH'),
+            2 => $this->createPhlag(2, 'max_items', 'INTEGER'),
+            3 => $this->createPhlag(3, 'multiplier', 'FLOAT'),
+            4 => $this->createPhlag(4, 'message', 'STRING'),
         ];
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository($phlags);
+        $env_values = [
+            1 => $this->createEnvironmentValue(1, 'true'),
+            2 => $this->createEnvironmentValue(2, '100'),
+            3 => $this->createEnvironmentValue(3, '1.5'),
+            4 => $this->createEnvironmentValue(4, 'Hello'),
+        ];
+
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository($phlags, $env_values);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -169,17 +271,12 @@ class GetFlagsTest extends TestCase {
      * Tests inactive SWITCH flag returns false
      */
     public function testLoadDataInactiveSwitchReturnsFalse(): void {
-        $phlag = $this->createPhlag(
-            1,
-            'scheduled_flag',
-            'SWITCH',
-            'true',
-            '2099-01-01 00:00:00',
-            null
-        );
+        $phlag = $this->createPhlag(1, 'scheduled_flag', 'SWITCH');
+        $env_value = $this->createEnvironmentValue(1, 'true', '2099-01-01 00:00:00', null);
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository([1 => $phlag], [1 => $env_value]);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -198,17 +295,12 @@ class GetFlagsTest extends TestCase {
      * Tests inactive INTEGER flag returns null
      */
     public function testLoadDataInactiveIntegerReturnsNull(): void {
-        $phlag = $this->createPhlag(
-            1,
-            'old_config',
-            'INTEGER',
-            '50',
-            null,
-            '2020-01-01 00:00:00'
-        );
+        $phlag = $this->createPhlag(1, 'old_config', 'INTEGER');
+        $env_value = $this->createEnvironmentValue(1, '50', null, '2020-01-01 00:00:00');
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository([1 => $phlag], [1 => $env_value]);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -227,10 +319,12 @@ class GetFlagsTest extends TestCase {
      * Tests null datetime fields are preserved as null
      */
     public function testLoadDataNullDatetimesPreserved(): void {
-        $phlag = $this->createPhlag(1, 'no_dates', 'SWITCH', 'true', null, null);
+        $phlag = $this->createPhlag(1, 'no_dates', 'SWITCH');
+        $env_value = $this->createEnvironmentValue(1, 'true', null, null);
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository([1 => $phlag], [1 => $env_value]);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -248,17 +342,12 @@ class GetFlagsTest extends TestCase {
      * Tests datetime conversion to ISO 8601 format
      */
     public function testLoadDataDatetimeIso8601Format(): void {
-        $phlag = $this->createPhlag(
-            1,
-            'dated_flag',
-            'SWITCH',
-            'true',
-            '2024-06-15 12:30:45',
-            null
-        );
+        $phlag = $this->createPhlag(1, 'dated_flag', 'SWITCH');
+        $env_value = $this->createEnvironmentValue(1, 'true', '2024-06-15 12:30:45', null);
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository([1 => $phlag], [1 => $env_value]);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -281,28 +370,22 @@ class GetFlagsTest extends TestCase {
      */
     public function testLoadDataMixedActiveInactive(): void {
         $phlags = [
-            1 => $this->createPhlag(1, 'active_switch', 'SWITCH', 'true'),
-            2 => $this->createPhlag(
-                2,
-                'inactive_switch',
-                'SWITCH',
-                'true',
-                '2099-01-01 00:00:00',
-                null
-            ),
-            3 => $this->createPhlag(3, 'active_int', 'INTEGER', '42'),
-            4 => $this->createPhlag(
-                4,
-                'inactive_int',
-                'INTEGER',
-                '99',
-                null,
-                '2020-01-01 00:00:00'
-            ),
+            1 => $this->createPhlag(1, 'active_switch', 'SWITCH'),
+            2 => $this->createPhlag(2, 'inactive_switch', 'SWITCH'),
+            3 => $this->createPhlag(3, 'active_int', 'INTEGER'),
+            4 => $this->createPhlag(4, 'inactive_int', 'INTEGER'),
         ];
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository($phlags);
+        $env_values = [
+            1 => $this->createEnvironmentValue(1, 'true'),
+            2 => $this->createEnvironmentValue(2, 'true', '2099-01-01 00:00:00', null),
+            3 => $this->createEnvironmentValue(3, '42'),
+            4 => $this->createEnvironmentValue(4, '99', null, '2020-01-01 00:00:00'),
+        ];
+
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository($phlags, $env_values);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');
@@ -329,7 +412,8 @@ class GetFlagsTest extends TestCase {
      * Tests respond method outputs array as JSON
      */
     public function testRespondOutputsJsonArray(): void {
-        $action = new GetFlags();
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
 
         $data = [
             'http_status' => 200,
@@ -359,7 +443,8 @@ class GetFlagsTest extends TestCase {
      * Tests respond method outputs empty array correctly
      */
     public function testRespondOutputsEmptyArray(): void {
-        $action = new GetFlags();
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
 
         $data = [
             'http_status' => 200,
@@ -377,7 +462,8 @@ class GetFlagsTest extends TestCase {
      * Tests formatDatetimeIso8601 method with valid datetime
      */
     public function testFormatDatetimeIso8601ValidDatetime(): void {
-        $action = new GetFlags();
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
 
         $reflection = new \ReflectionClass($action);
         $method = $reflection->getMethod('formatDatetimeIso8601');
@@ -396,7 +482,8 @@ class GetFlagsTest extends TestCase {
      * Tests formatDatetimeIso8601 method with null
      */
     public function testFormatDatetimeIso8601Null(): void {
-        $action = new GetFlags();
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
 
         $reflection = new \ReflectionClass($action);
         $method = $reflection->getMethod('formatDatetimeIso8601');
@@ -411,7 +498,8 @@ class GetFlagsTest extends TestCase {
      * Tests formatDatetimeIso8601 method with invalid datetime returns null
      */
     public function testFormatDatetimeIso8601InvalidDatetime(): void {
-        $action = new GetFlags();
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
 
         $reflection = new \ReflectionClass($action);
         $method = $reflection->getMethod('formatDatetimeIso8601');
@@ -426,10 +514,12 @@ class GetFlagsTest extends TestCase {
      * Tests that all flag objects have exactly 5 fields
      */
     public function testLoadDataFlagObjectsHaveFiveFields(): void {
-        $phlag = $this->createPhlag(1, 'test_flag', 'SWITCH', 'true');
+        $phlag = $this->createPhlag(1, 'test_flag', 'SWITCH');
+        $env_value = $this->createEnvironmentValue(1, 'true');
 
-        $action = new GetFlags();
-        $repository = $this->createMockRepository([1 => $phlag]);
+        $action = $this->createActionWithAuthBypass();
+        $action->environment = 'production';
+        $repository = $this->createMockRepository([1 => $phlag], [1 => $env_value]);
 
         $reflection = new \ReflectionClass($action);
         $property = $reflection->getProperty('repository');

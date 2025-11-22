@@ -4,6 +4,7 @@ namespace Moonspot\Phlag\Tests\Unit\Action;
 
 use Moonspot\Phlag\Action\FlagValueTrait;
 use Moonspot\Phlag\Data\Phlag;
+use Moonspot\Phlag\Data\PhlagEnvironmentValue;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -30,146 +31,155 @@ class FlagValueTraitTest extends TestCase {
             use FlagValueTrait;
 
             /**
-             * Expose protected isPhlagActive for testing
+             * Expose protected isValueActive for testing
              */
-            public function testIsPhlagActive(Phlag $phlag, string $now): bool {
-                return $this->isPhlagActive($phlag, $now);
+            public function testIsValueActive(PhlagEnvironmentValue $env_value, string $now): bool {
+                return $this->isValueActive($env_value, $now);
             }
 
             /**
              * Expose protected castValue for testing
              */
-            public function testCastValue(?string $value, ?string $type): mixed {
+            public function testCastValue(?string $value, string $type): mixed {
                 return $this->castValue($value, $type);
+            }
+
+            /**
+             * Expose protected getInactiveValue for testing
+             */
+            public function testGetInactiveValue(string $type): mixed {
+                return $this->getInactiveValue($type);
             }
         };
     }
 
     /**
-     * Creates a test phlag object
+     * Creates a test environment value object
      *
+     * @param ?string $value          Flag value
      * @param ?string $start_datetime Start datetime or null
      * @param ?string $end_datetime   End datetime or null
      *
-     * @return Phlag Test phlag object
+     * @return PhlagEnvironmentValue Test environment value object
      */
-    protected function createPhlag(
+    protected function createEnvironmentValue(
+        ?string $value = 'true',
         ?string $start_datetime = null,
         ?string $end_datetime = null
-    ): Phlag {
-        $phlag = new Phlag();
-        $phlag->phlag_id = 1;
-        $phlag->name = 'test_flag';
-        $phlag->type = 'SWITCH';
-        $phlag->value = 'true';
-        $phlag->start_datetime = $start_datetime;
-        $phlag->end_datetime = $end_datetime;
+    ): PhlagEnvironmentValue {
+        $env_value = new PhlagEnvironmentValue();
+        $env_value->phlag_environment_value_id = 1;
+        $env_value->phlag_id = 1;
+        $env_value->phlag_environment_id = 1;
+        $env_value->value = $value;
+        $env_value->start_datetime = $start_datetime;
+        $env_value->end_datetime = $end_datetime;
 
-        return $phlag;
+        return $env_value;
     }
 
     /**
-     * Tests that a flag with no temporal constraints is always active
+     * Tests that a value with no temporal constraints is always active
      */
     public function testIsPhlagActiveNoConstraints(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag();
+        $env_value = $this->createEnvironmentValue();
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag with no temporal constraints should be active');
+        $this->assertTrue($result, 'Value with no temporal constraints should be active');
     }
 
     /**
-     * Tests that a flag is active when current time is after start date
+     * Tests that a value is active when current time is after start date
      */
     public function testIsPhlagActiveAfterStartDate(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag('2024-01-01 00:00:00', null);
+        $env_value = $this->createEnvironmentValue('true', '2024-01-01 00:00:00', null);
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag should be active when current time is after start date');
+        $this->assertTrue($result, 'Value should be active when current time is after start date');
     }
 
     /**
-     * Tests that a flag is inactive when current time is before start date
+     * Tests that a value is inactive when current time is before start date
      */
     public function testIsPhlagActiveBeforeStartDate(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag('2024-12-01 00:00:00', null);
+        $env_value = $this->createEnvironmentValue('true', '2099-01-01 00:00:00', null);
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertFalse($result, 'Flag should be inactive when current time is before start date');
+        $this->assertFalse($result, 'Value should be inactive when current time is before start date');
     }
 
     /**
-     * Tests that a flag is active when current time is before end date
+     * Tests that a value is active when current time is before end date
      */
     public function testIsPhlagActiveBeforeEndDate(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag(null, '2024-12-31 23:59:59');
+        $env_value = $this->createEnvironmentValue('true', null, '2099-12-31 23:59:59');
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag should be active when current time is before end date');
+        $this->assertTrue($result, 'Value should be active when current time is before end date');
     }
 
     /**
-     * Tests that a flag is inactive when current time is after end date
+     * Tests that a value is inactive when current time is after end date
      */
     public function testIsPhlagActiveAfterEndDate(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag(null, '2024-01-31 23:59:59');
+        $env_value = $this->createEnvironmentValue('true', null, '2020-01-01 00:00:00');
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertFalse($result, 'Flag should be inactive when current time is after end date');
+        $this->assertFalse($result, 'Value should be inactive when current time is after end date');
     }
 
     /**
-     * Tests that a flag is active when current time is within date range
+     * Tests that a value is active when current time is within date range
      */
     public function testIsPhlagActiveWithinDateRange(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag('2024-01-01 00:00:00', '2024-12-31 23:59:59');
+        $env_value = $this->createEnvironmentValue('true', '2024-01-01 00:00:00', '2099-12-31 23:59:59');
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag should be active when current time is within date range');
+        $this->assertTrue($result, 'Value should be active when current time is within date range');
     }
 
     /**
-     * Tests that a flag is active at exact start datetime
+     * Tests that a value is active exactly at the start datetime
      */
     public function testIsPhlagActiveAtStartDatetime(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag('2024-06-15 12:00:00', null);
+        $env_value = $this->createEnvironmentValue('true', '2024-06-15 12:00:00', null);
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag should be active at exact start datetime');
+        $this->assertTrue($result, 'Value should be active exactly at start datetime');
     }
 
     /**
-     * Tests that a flag is active at exact end datetime
+     * Tests that a value is active exactly at the end datetime
      */
     public function testIsPhlagActiveAtEndDatetime(): void {
         $trait_user = $this->getTraitUser();
-        $phlag = $this->createPhlag(null, '2024-06-15 12:00:00');
+        $env_value = $this->createEnvironmentValue('true', null, '2024-06-15 12:00:00');
         $now = '2024-06-15 12:00:00';
 
-        $result = $trait_user->testIsPhlagActive($phlag, $now);
+        $result = $trait_user->testIsValueActive($env_value, $now);
 
-        $this->assertTrue($result, 'Flag should be active at exact end datetime');
+        $this->assertTrue($result, 'Value should be active exactly at end datetime');
     }
 
     /**
@@ -271,17 +281,6 @@ class FlagValueTraitTest extends TestCase {
         $this->assertNull($result_int);
         $this->assertNull($result_float);
         $this->assertNull($result_string);
-    }
-
-    /**
-     * Tests casting with null type returns value as-is
-     */
-    public function testCastValueNullType(): void {
-        $trait_user = $this->getTraitUser();
-
-        $result = $trait_user->testCastValue('test', null);
-
-        $this->assertSame('test', $result);
     }
 
     /**

@@ -108,7 +108,7 @@ class GetPhlagState extends Base {
      * Loads the phlag environment value and returns its typed value
      *
      * This method performs the following steps:
-     * 1. Authenticate API key
+     * 1. Authenticate API key (returns 401 if invalid)
      * 2. Find flag by name
      * 3. Find environment by name (404 if not found)
      * 4. Find environment value for this flag/environment combination
@@ -119,8 +119,8 @@ class GetPhlagState extends Base {
      * that signals to the respond method to output only the value.
      *
      * Heads-up: This method requires Bearer token authentication via the
-     * Authorization header. If authentication fails, a 401 response is
-     * sent and the script exits.
+     * Authorization header. If authentication fails, a 401 response array
+     * is returned.
      *
      * ## Return Value Scenarios
      *
@@ -135,8 +135,9 @@ class GetPhlagState extends Base {
      */
     public function loadData(): array {
 
-        if (!$this->authenticateApiKey()) {
-            return [];
+        $auth_error = $this->authenticateApiKey();
+        if ($auth_error !== null) {
+            return $auth_error;
         }
 
         // Step 1: Find flag by name

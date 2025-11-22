@@ -131,7 +131,7 @@ class GetFlags extends Base {
      * Loads all phlags and returns their complete environment-specific details
      *
      * This method performs the following steps:
-     * 1. Authenticate API key
+     * 1. Authenticate API key (returns 401 if invalid)
      * 2. Find environment by name (404 if not found)
      * 3. Retrieve all flags
      * 4. For each flag, find its environment value
@@ -145,8 +145,8 @@ class GetFlags extends Base {
      * the other flag endpoints.
      *
      * Heads-up: This method requires Bearer token authentication via the
-     * Authorization header. If authentication fails, a 401 response is
-     * sent and the script exits.
+     * Authorization header. If authentication fails, a 401 response array
+     * is returned.
      *
      * ## Response Structure
      *
@@ -161,8 +161,9 @@ class GetFlags extends Base {
      */
     public function loadData(): array {
 
-        if (!$this->authenticateApiKey()) {
-            return [];
+        $auth_error = $this->authenticateApiKey();
+        if ($auth_error !== null) {
+            return $auth_error;
         }
 
         // Step 1: Find environment by name

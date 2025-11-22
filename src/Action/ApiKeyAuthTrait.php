@@ -43,33 +43,32 @@ trait ApiKeyAuthTrait {
      * Authenticates the request using Bearer token
      *
      * Extracts the Bearer token from the Authorization header and validates
-     * it against the phlag_api_keys table. If authentication fails, sends
-     * a 401 response and returns false.
+     * it against the phlag_api_keys table. If authentication fails, returns
+     * an error response array.
      *
      * ## How It Works
      *
      * - Checks for Authorization header
      * - Extracts Bearer token from header
      * - Queries database for matching API key
-     * - Returns true if valid, false otherwise
+     * - Returns null if valid, error array otherwise
      *
      * ## Edge Cases
      *
-     * - Missing Authorization header returns 401
-     * - Invalid header format (not "Bearer <token>") returns 401
-     * - Token not found in database returns 401
+     * - Missing Authorization header returns error array
+     * - Invalid header format (not "Bearer <token>") returns error array
+     * - Token not found in database returns error array
      * - All error messages are generic to prevent enumeration
      *
-     * @return bool Returns true if authenticated, false otherwise (and sends 401)
+     * @return ?array Returns null if authenticated, error response array otherwise
      */
-    protected function authenticateApiKey(): bool {
+    protected function authenticateApiKey(): ?array {
 
         $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
         // Check if Authorization header is present
         if (empty($auth_header)) {
-            $this->sendUnauthorized('Missing authorization header');
-            return false;
+            return $this->getUnauthorizedResponse('Missing authorization header');
         }
 
         // Extract Bearer token
@@ -77,17 +76,15 @@ trait ApiKeyAuthTrait {
         $token = $this->extractBearerToken($auth_header);
 
         if ($token === null) {
-            $this->sendUnauthorized('Invalid authorization header format');
-            return false;
+            return $this->getUnauthorizedResponse('Invalid authorization header format');
         }
 
         // Validate token against database
         if (!$this->validateApiKey($token)) {
-            $this->sendUnauthorized('Invalid API key');
-            return false;
+            return $this->getUnauthorizedResponse('Invalid API key');
         }
 
-        return true;
+        return null;
     }
 
     /**
@@ -157,28 +154,20 @@ trait ApiKeyAuthTrait {
     }
 
     /**
-     * Sends a 401 Unauthorized response
+     * Builds a 401 Unauthorized response array
      *
-     * Sets the HTTP status code to 401 and outputs a JSON error message.
+     * Creates a standardized error response for authentication failures.
      * Uses generic messages to prevent API key enumeration attacks.
-     *
-     * Heads-up: This method outputs the JSON response and exits to prevent
-     * any further processing or output.
      *
      * @param string $message Error message to include in response
      *
-     * @return void
+     * @return array Unauthorized response array with http_status, error, and message
      */
-    protected function sendUnauthorized(string $message): void {
-
-        http_response_code(401);
-        header('Content-Type: application/json');
-        
-        echo json_encode([
-            'error'   => 'Unauthorized',
-            'message' => $message,
-        ]);
-        
-        exit;
+    protected function getUnauthorizedResponse(string $message): array {
+        return [
+            'http_status' => 401,
+            'error'       => 'Unauthorized',
+            'message'     => $message,
+        ];
     }
 }
