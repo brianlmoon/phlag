@@ -354,13 +354,6 @@ try {
             'tokens'  => ['id'],
         ],
 
-        // Static files
-        [
-            'type'    => 'starts_with',
-            'pattern' => '/assets/',
-            'action'  => 'static_file',
-        ],
-
         // Flag state endpoints (v2.0 - environment required)
         // All flags endpoint (must come before single flag endpoint)
         [
@@ -822,22 +815,36 @@ try {
                 );
                 break;
 
-            case 'static_file':
+            case 'not_found':
+            default:
                 /**
-                 * Serve static files from public/assets/
+                 * Handle static files and 404 Not Found errors
                  *
-                 * Handles CSS, JavaScript, images, and other static assets.
-                 * Sets appropriate Content-Type headers based on file extension.
+                 * First checks if a static file exists in the public directory.
+                 * If found, serves it with the appropriate Content-Type header.
+                 * If not found, returns a 404 error (JSON for API, HTML for web).
                  *
-                 * Returns 404 if file not found or path is invalid.
+                 * ## Static File Handling
+                 *
+                 * Serves files from the public directory (CSS, JS, images, etc.)
+                 * with proper MIME type headers based on file extension.
+                 *
+                 * ## 404 Error Handling
+                 *
+                 * API requests are identified by:
+                 * - Path starts with /api/
+                 * - Accept header includes application/json
+                 *
+                 * Web requests receive an HTML error page for consistent UX.
                  */
                 $file_path = __DIR__ . $request_path;
+                
                 if (file_exists($file_path) && is_file($file_path)) {
                     /**
-                     * Determine content type based on file extension
+                     * Serve static file with appropriate Content-Type
                      *
-                     * Common MIME types for web assets. Defaults to
-                     * application/octet-stream for unknown types.
+                     * Determines MIME type based on file extension and serves
+                     * the file. Common web asset types are supported.
                      */
                     $extension = pathinfo($file_path, PATHINFO_EXTENSION);
                     $content_types = [
@@ -854,50 +861,40 @@ try {
                     header('Content-Type: ' . $content_type);
                     readfile($file_path);
                 } else {
-                    http_response_code(404);
-                    echo 'File not found';
-                }
-                break;
-
-            case 'not_found':
-            default:
-                /**
-                 * Handle 404 Not Found errors
-                 *
-                 * Detects whether this is an API request or web request
-                 * and returns the appropriate error format (JSON or HTML).
-                 *
-                 * API requests are identified by:
-                 * - Path starts with /api/
-                 * - Accept header includes application/json
-                 */
-                $is_api_request = strpos($request_path, '/api/') === 0 ||
-                                  (isset($_SERVER['HTTP_ACCEPT']) &&
-                                   strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
-
-                if ($is_api_request) {
                     /**
-                     * Return JSON error for API requests
+                     * Return 404 error response
                      *
-                     * Provides structured error information for programmatic
-                     * consumption by API clients.
+                     * Detects request type and returns appropriate format.
+                     * API requests get JSON, web requests get HTML.
                      */
-                    header('Content-Type: application/json');
-                    http_response_code(404);
-                    echo json_encode([
-                        'error'   => 'Not Found',
-                        'message' => 'The requested resource does not exist',
-                        'path'    => $request_path,
-                    ], JSON_PRETTY_PRINT);
-                } else {
-                    /**
-                     * Return HTML error page for web requests
-                     *
-                     * Renders a user-friendly error page using the
-                     * BaseController's error template.
-                     */
-                    $controller = new \Moonspot\Phlag\Web\Controller\HomeController();
-                    $controller->renderError(404, 'The requested page does not exist');
+                    $is_api_request = strpos($request_path, '/api/') === 0 ||
+                                      (isset($_SERVER['HTTP_ACCEPT']) &&
+                                       strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+                    if ($is_api_request) {
+                        /**
+                         * Return JSON error for API requests
+                         *
+                         * Provides structured error information for programmatic
+                         * consumption by API clients.
+                         */
+                        header('Content-Type: application/json');
+                        http_response_code(404);
+                        echo json_encode([
+                            'error'   => 'Not Found',
+                            'message' => 'The requested resource does not exist',
+                            'path'    => $request_path,
+                        ], JSON_PRETTY_PRINT);
+                    } else {
+                        /**
+                         * Return HTML error page for web requests
+                         *
+                         * Renders a user-friendly error page using the
+                         * BaseController's error template.
+                         */
+                        $controller = new \Moonspot\Phlag\Web\Controller\HomeController();
+                        $controller->renderError(404, 'The requested page does not exist');
+                    }
                 }
                 break;
         }
