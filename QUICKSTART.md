@@ -1,8 +1,8 @@
-# Phlag v2.0 Quick Start Guide
+# Phlag Quick Start Guide
 
 ## First-Time Setup
 
-Now that you've installed the v2.0 database schema, follow these steps to get started:
+Now that you've installed the application, follow these steps to get started:
 
 ### 1. Create Your First User
 
@@ -95,32 +95,6 @@ Returns:
   }
 ]
 ```
-
-## Key Differences from v1.x
-
-### Breaking Changes
-
-1. **Environment Required:** All flag retrieval endpoints now require an environment parameter
-   - Old: `/flag/my_flag` ❌
-   - New: `/flag/production/my_flag` ✅
-
-2. **No Global Values:** Flags no longer have a single "value" - they have environment-specific values
-   - Each flag can have different values in production, staging, development, etc.
-
-3. **Immutable Fields:** After creation, a flag's `name` and `type` cannot be changed
-   - This prevents breaking API contracts
-   - Delete and recreate if you need to change these
-
-### New Features
-
-1. **Environment-Specific Values:** Configure different values per environment
-2. **Temporal Constraints Per Environment:** Each environment value can have its own start/end dates
-3. **NULL Semantics:**
-   - No environment value = `null` (not configured)
-   - Environment value with NULL = inactive value (explicitly disabled)
-   - SWITCH returns `false` when inactive
-   - INTEGER/FLOAT/STRING return `null` when inactive
-
 ## Common Workflows
 
 ### Gradual Rollout
@@ -191,25 +165,3 @@ The API returns real-time values - there's no caching. If values aren't updating
 1. Check you're querying the correct environment
 2. Verify the value was saved (view the flag in the admin panel)
 3. Check temporal constraints (start/end dates)
-
-## Next Steps
-
-1. Read `AGENTS.md` for detailed technical documentation
-2. Check `ENV_FEATURE.md` for the complete v2.0 implementation plan
-3. Review existing flags and migrate them to environment-specific values
-4. Update your applications to include environment in API calls
-
-## Migration from v1.x
-
-If you have existing applications using v1.x endpoints:
-
-1. **Update API Calls:** Add environment parameter to all flag queries
-2. **Reconfigure Flags:** Old flag values were lost in migration - reconfigure with environment values
-3. **Test Thoroughly:** The NULL semantics changed - test edge cases
-
-## Support
-
-For questions or issues, refer to:
-- `README.md` - General project documentation
-- `AGENTS.md` - AI agent quick reference
-- `ENV_FEATURE.md` - v2.0 feature specification

@@ -9,14 +9,10 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 
 - 🎯 **Typed Flags**: SWITCH (boolean), INTEGER, FLOAT, STRING
 - ⏰ **Temporal Control**: Schedule flags with start/end dates
-- 🔐 **Dual Authentication**: Session-based admin + Bearer token API
 - 🌐 **Web Interface**: Clean admin UI for managing flags, API keys, and users
-- 📡 **RESTful API**: Full CRUD operations + flag state endpoints
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
-- 🛡️ **Security Built-in**: CSRF protection, bcrypt passwords, session management
 - 📧 **Password Reset**: Email-based password recovery
 - 🗄️ **Multi-Database**: MySQL, PostgreSQL, SQLite support
-- ✅ **Fully Tested**: 77 tests, 186 assertions, 100% pass rate
 
 ## Quick Start
 
@@ -146,6 +142,8 @@ server {
 
 ## Usage
 
+See [QUICKSTART](QUICKSTART.md) for a detailed tutorial of gettings started using the application.
+
 ### Managing Flags via Web UI
 
 1. **Create a flag**: Navigate to "Flags" → "Create New Flag"
@@ -244,55 +242,7 @@ Flags can be scheduled to activate/deactivate automatically:
 - SWITCH flags return `false`
 - INTEGER/FLOAT/STRING flags return `null`
 
-### Admin API (Session-Based)
-
-The web UI uses AJAX to call admin endpoints. These require session authentication (automatic cookie-based) and are only accessible when logged in:
-
-```bash
-# List all flags (requires active session)
-curl -X GET http://localhost:8000/api/Phlag/ \
-     -H "Cookie: PHPSESSID=your-session-id"
-
-# Create a flag
-curl -X POST http://localhost:8000/api/Phlag/ \
-     -H "Content-Type: application/json" \
-     -H "Cookie: PHPSESSID=your-session-id" \
-     -d '{
-       "name": "new_feature",
-       "type": "SWITCH",
-       "value": "true"
-     }'
-
-# Update a flag
-curl -X PUT http://localhost:8000/api/Phlag/123/ \
-     -H "Content-Type: application/json" \
-     -H "Cookie: PHPSESSID=your-session-id" \
-     -d '{"value": "false"}'
-
-# Delete a flag
-curl -X DELETE http://localhost:8000/api/Phlag/123/ \
-     -H "Cookie: PHPSESSID=your-session-id"
-```
-
-**Note:** All admin API endpoints require trailing slashes.
-
 ## Application Architecture
-
-### Authentication Model
-
-Phlag uses two distinct authentication systems:
-
-**Session-Based (Admin Operations)**
-- Web UI and `/api/*` CRUD endpoints
-- Automatic cookie-based authentication
-- 30-minute timeout (configurable)
-- Session regeneration on login
-
-**Bearer Token (Flag Retrieval)**
-- `/flag/{name}`, `/all-flags`, `/get-flags` endpoints
-- Requires `Authorization: Bearer <api_key>` header
-- For external application access
-- Keys are 64-character cryptographically secure strings
 
 ### Directory Structure
 
@@ -347,13 +297,6 @@ phlag/
 
 Schema changes are tracked in the `schema/` directory. To update your database:
 
-```bash
-# Review changes in schema files
-git diff schema/mysql.sql
-
-# Apply manually or use your preferred migration tool
-```
-
 ### Adding New Features
 
 1. Write unit tests first (TDD approach)
@@ -364,16 +307,6 @@ git diff schema/mysql.sql
 6. Run tests to verify
 
 ## Troubleshooting
-
-### 404 on Admin API Endpoints
-
-Admin API endpoints require trailing slashes:
-- ✅ `/api/Phlag/`
-- ❌ `/api/Phlag`
-
-### 401 Unauthorized on Admin API
-
-Ensure you're logged in via the web UI. Session cookies must be sent with requests.
 
 ### Flag Returns Wrong Type
 
@@ -395,14 +328,6 @@ php -r "
 "
 ```
 
-### Session Timeout Issues
-
-Adjust session timeout in `etc/config.ini`:
-```ini
-[session]
-session.timeout = 3600  # 1 hour (default: 1800)
-```
-
 ### Database Connection Failed
 
 Verify credentials in `etc/config.ini` and ensure database server is running:
@@ -413,79 +338,6 @@ mysql -u phlag_user -p -h localhost phlag
 # PostgreSQL
 psql -U phlag_user -h localhost -d phlag
 ```
-
-## Production Deployment
-
-### Security Checklist
-
-- [ ] Change default database password
-- [ ] Configure HTTPS (required for production)
-- [ ] Set `display_errors = 0` in PHP configuration
-- [ ] Configure error logging to monitored file
-- [ ] Use environment-specific `config.ini` (don't commit credentials)
-- [ ] Set session cookie to secure/httponly in `php.ini`
-- [ ] Configure SMTP authentication for password reset
-- [ ] Review and adjust session timeout for your security requirements
-- [ ] Set up regular database backups
-- [ ] Monitor error logs for security issues
-
-### Performance Tips
-
-- Enable OPcache in production
-- Use connection pooling for database
-- Consider Redis/Memcached for session storage at scale
-- Set up database indexes on frequently queried columns
-- Use a reverse proxy (Nginx) in front of PHP-FPM
-
-### Monitoring
-
-Key metrics to track:
-- API response times for flag endpoints
-- Failed authentication attempts
-- Session creation/destruction rates
-- Database query performance
-- Error log entries
-
-## API Reference
-
-### Flag State Endpoints (Bearer Auth)
-
-**GET /flag/{name}**
-- Returns: Typed scalar value or null
-- Auth: Bearer token required
-
-**GET /all-flags**
-- Returns: Object of all flag values
-- Auth: Bearer token required
-
-**GET /get-flags**
-- Returns: Array of flag objects with metadata
-- Auth: Bearer token required
-
-### Admin API Endpoints (Session Auth)
-
-All endpoints require trailing slash and active session.
-
-**Phlag Endpoints**
-- `GET /api/Phlag/` - List all
-- `GET /api/Phlag/{id}/` - Get one
-- `POST /api/Phlag/` - Create
-- `PUT /api/Phlag/{id}/` - Update
-- `DELETE /api/Phlag/{id}/` - Delete
-
-**PhlagApiKey Endpoints**
-- `GET /api/PhlagApiKey/` - List all
-- `GET /api/PhlagApiKey/{id}/` - Get one
-- `POST /api/PhlagApiKey/` - Create (auto-generates key)
-- `PUT /api/PhlagApiKey/{id}/` - Update
-- `DELETE /api/PhlagApiKey/{id}/` - Delete
-
-**PhlagUser Endpoints**
-- `GET /api/PhlagUser/` - List all
-- `GET /api/PhlagUser/{id}/` - Get one
-- `POST /api/PhlagUser/` - Create
-- `PUT /api/PhlagUser/{id}/` - Update
-- `DELETE /api/PhlagUser/{id}/` - Delete
 
 ## Contributing
 
