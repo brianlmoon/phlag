@@ -1,0 +1,35 @@
+{
+    "name": "moonspot/phlag",
+    "description": "Service providing feature flags",
+    "type": "project",
+    "license": "BSD-3-Clause",
+    "autoload": {
+        "psr-4": {
+            "Moonspot\\Phlag\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Moonspot\\Phlag\\Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Brian Moon",
+            "email": "brian@moonspot.net"
+        }
+    ],
+    "require": {
+        "moonspot/value-objects": "^2.1",
+        "dealnews/db": "^4.0.5",
+        "pagemill/router": "^2.0",
+        "dealnews/data-mapper-api": "^2.3.2",
+        "twig/twig": "^3.22",
+        "php": "^8.4",
+        "phpmailer/phpmailer": "^7.0",
+        "dealnews/get-config": "^2.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    }
+}

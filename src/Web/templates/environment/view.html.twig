@@ -1,0 +1,56 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="environment-view">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/environments/{{ environment_id }}/edit" class="btn btn-primary">Edit</a>
+            <button onclick="EnvironmentManager.delete({{ environment_id }})" class="btn btn-danger">Delete</button>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading environment...</p>
+    </div>
+
+    <div id="environment-details" class="hidden details-view">
+        <div class="detail-group">
+            <label>ID</label>
+            <div id="detail-id" class="detail-value"></div>
+        </div>
+
+        <div class="detail-group">
+            <label>Name</label>
+            <div id="detail-name" class="detail-value"></div>
+        </div>
+
+        <div class="detail-group">
+            <label>Created</label>
+            <div id="detail-created" class="detail-value"></div>
+        </div>
+
+        <div class="detail-group">
+            <label>Last Updated</label>
+            <div id="detail-updated" class="detail-value"></div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ base_url }}/environments" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/environment.js"></script>
+<script>
+    // Load environment details when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        EnvironmentManager.init('{{ api_url }}');
+        EnvironmentManager.loadSingle({{ environment_id }});
+    });
+</script>
+{% endblock %}

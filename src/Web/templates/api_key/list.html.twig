@@ -1,0 +1,50 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="api-key-list">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/api-keys/create" class="btn btn-primary">Create New API Key</a>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading API keys...</p>
+    </div>
+
+    <div id="api-key-table-container" class="hidden">
+        <table id="api-key-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="hide-mobile">API Key</th>
+                    <th class="hide-mobile">Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="api-key-tbody">
+                {# Populated by JavaScript #}
+            </tbody>
+        </table>
+
+        <div id="empty-state" class="hidden text-center" style="padding: 3rem;">
+            <p>No API keys found.</p>
+            <p><a href="{{ base_url }}/api-keys/create" class="btn btn-primary">Create your first API key</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/api_key.js"></script>
+<script>
+    // Initialize and load API key list when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        ApiKeyManager.init('{{ api_url }}');
+        ApiKeyManager.loadList();
+    });
+</script>
+{% endblock %}

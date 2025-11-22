@@ -1,0 +1,50 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="environment-list">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/environments/create" class="btn btn-primary">Create New Environment</a>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading environments...</p>
+    </div>
+
+    <div id="environment-table-container" class="hidden">
+        <table id="environment-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="hide-mobile">Created</th>
+                    <th class="hide-mobile">Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="environment-tbody">
+                {# Populated by JavaScript #}
+            </tbody>
+        </table>
+
+        <div id="empty-state" class="hidden text-center" style="padding: 3rem;">
+            <p>No environments found.</p>
+            <p><a href="{{ base_url }}/environments/create" class="btn btn-primary">Create your first environment</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/environment.js"></script>
+<script>
+    // Initialize and load environment list when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        EnvironmentManager.init('{{ api_url }}');
+        EnvironmentManager.loadList();
+    });
+</script>
+{% endblock %}

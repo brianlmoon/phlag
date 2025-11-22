@@ -1,0 +1,72 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="api-key-view">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/api-keys/{{ api_key_id }}/edit" class="btn btn-primary">Edit</a>
+            <button id="delete-btn" class="btn btn-danger">Delete</button>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading API key details...</p>
+    </div>
+
+    <div id="api-key-details" class="hidden">
+        <div class="card">
+            <h2>API Key Information</h2>
+            
+            <div class="alert alert-info">
+                <strong>Security Notice:</strong> API key values are masked for security. 
+                Only the first and last few characters are shown.
+            </div>
+            
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>ID:</label>
+                    <span id="detail-id"></span>
+                </div>
+
+                <div class="detail-item">
+                    <label>Description:</label>
+                    <span id="detail-description"></span>
+                </div>
+
+                <div class="detail-item">
+                    <label>API Key:</label>
+                    <span id="detail-api-key" class="masked-key"></span>
+                </div>
+
+                <div class="detail-item">
+                    <label>Created:</label>
+                    <span id="detail-created"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <a href="{{ base_url }}/api-keys" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/api_key.js"></script>
+<script>
+    // Initialize and load API key details
+    document.addEventListener('DOMContentLoaded', function() {
+        ApiKeyManager.init('{{ api_url }}');
+        ApiKeyManager.loadSingle({{ api_key_id }});
+        
+        // Handle delete button
+        document.getElementById('delete-btn').addEventListener('click', function() {
+            ApiKeyManager.delete({{ api_key_id }});
+        });
+    });
+</script>
+{% endblock %}

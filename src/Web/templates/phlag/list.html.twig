@@ -1,0 +1,51 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="phlag-list">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/flags/create" class="btn btn-primary">Create New Flag</a>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading flags...</p>
+    </div>
+
+    <div id="phlag-table-container" class="hidden">
+        <table id="phlag-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="hide-mobile">Description</th>
+                    <th class="hide-mobile">Type</th>
+                    <th class="hide-mobile">Environments</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="phlag-tbody">
+                {# Populated by JavaScript #}
+            </tbody>
+        </table>
+
+        <div id="empty-state" class="hidden text-center" style="padding: 3rem;">
+            <p>No flags found.</p>
+            <p><a href="{{ base_url }}/flags/create" class="btn btn-primary">Create your first flag</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/phlag.js"></script>
+<script>
+    // Initialize and load phlag list when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        PhlagManager.init('{{ api_url }}');
+        PhlagManager.loadList();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Dashboard - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Welcome to Phlag</h1>
+    
+    <div class="dashboard-intro">
+        <p>Manage your feature flags, API keys, environments, and users from this central dashboard.</p>
+    </div>
+
+    <div class="dashboard-cards">
+        <div class="card">
+            <h2>Flags</h2>
+            <p>Feature flags that control application behavior based on configuration, dates, and values.</p>
+            <div class="card-actions">
+                <a href="{{ base_url }}/flags" class="btn btn-primary">Manage Flags</a>
+                <a href="{{ base_url }}/flags/create" class="btn btn-secondary">Create New Flag</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>API Keys</h2>
+            <p>Manage API keys for authenticating requests to the Phlag API.</p>
+            <div class="card-actions">
+                <a href="{{ base_url }}/api-keys" class="btn btn-primary">Manage API Keys</a>
+                <a href="{{ base_url }}/api-keys/create" class="btn btn-secondary">Create New API Key</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Environments</h2>
+            <p>Manage deployment environments for organizing feature flags across different contexts.</p>
+            <div class="card-actions">
+                <a href="{{ base_url }}/environments" class="btn btn-primary">Manage Environments</a>
+                <a href="{{ base_url }}/environments/create" class="btn btn-secondary">Create New Environment</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Users</h2>
+            <p>Manage user accounts and access to the Phlag administration interface.</p>
+            <div class="card-actions">
+                <a href="{{ base_url }}/users" class="btn btn-primary">Manage Users</a>
+                <a href="{{ base_url }}/users/create" class="btn btn-secondary">Create New User</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-info">
+        <h2>Flag Retrieval API</h2>
+        <p>Retrieve flag values and details using these custom endpoints:</p>
+        
+        <div class="api-auth-notice">
+            <h3>🔒 Authentication Required</h3>
+            <p>All flag retrieval endpoints require Bearer token authentication. Include your API key in the Authorization header:</p>
+            <pre class="api-example-code">Authorization: Bearer &lt;your-api-key&gt;</pre>
+            <p class="api-help-text">Create an API key in the <a href="{{ base_url }}/api-keys/create">API Keys</a> section. The key will be shown once upon creation.</p>
+        </div>
+        
+        <div class="api-endpoints">
+            <h3>Single Flag Value</h3>
+            <p><code>GET /flag/{environment}/{name}</code></p>
+            <p class="api-description">Get the current typed value of a specific flag in an environment. Returns the evaluated value based on temporal constraints.</p>
+            <div class="api-example-block">
+                <strong>Example Request:</strong>
+                <pre class="api-example-code">curl -H "Authorization: Bearer abc123..." \
+     {{ base_url }}/flag/production/feature_checkout</pre>
+                <strong>Example Responses:</strong>
+                <ul class="api-examples">
+                    <li><code>true</code> (SWITCH type, active)</li>
+                    <li><code>100</code> (INTEGER type, active)</li>
+                    <li><code>1.5</code> (FLOAT type, active)</li>
+                    <li><code>null</code> (flag not found or inactive)</li>
+                </ul>
+            </div>
+
+            <h3>All Flag Values</h3>
+            <p><code>GET /all-flags/{environment}</code></p>
+            <p class="api-description">Get all flags as a key-value object for an environment. Perfect for bulk lookups and client-side caching.</p>
+            <div class="api-example-block">
+                <strong>Example Request:</strong>
+                <pre class="api-example-code">curl -H "Authorization: Bearer abc123..." \
+     {{ base_url }}/all-flags/production</pre>
+                <strong>Example Response:</strong>
+                <pre class="api-example-response">{
+  "feature_checkout": true,
+  "max_items": 100,
+  "price_multiplier": 1.5
+}</pre>
+            </div>
+
+            <h3>All Flag Details</h3>
+            <p><code>GET /get-flags/{environment}</code></p>
+            <p class="api-description">Get complete flag details including type, value, and temporal constraints for an environment. Perfect for local flag resolution with full context.</p>
+            <div class="api-example-block">
+                <strong>Example Request:</strong>
+                <pre class="api-example-code">curl -H "Authorization: Bearer abc123..." \
+     {{ base_url }}/get-flags/production</pre>
+                <strong>Example Response:</strong>
+                <pre class="api-example-response">[
+  {
+    "name": "feature_checkout",
+    "type": "SWITCH",
+    "value": true,
+    "start_datetime": null,
+    "end_datetime": null
+  },
+  {
+    "name": "max_items",
+    "type": "INTEGER",
+    "value": 100,
+    "start_datetime": "2024-01-01T00:00:00-05:00",
+    "end_datetime": "2025-12-31T23:59:59-05:00"
+  },
+  {
+    "name": "price_multiplier",
+    "type": "FLOAT",
+    "value": 1.5,
+    "start_datetime": null,
+    "end_datetime": null
+  }
+]</pre>
+            </div>
+        </div>
+        
+        <div class="api-error-info">
+            <h3>Authentication Errors</h3>
+            <p>If authentication fails, you'll receive a 401 Unauthorized response:</p>
+            <pre class="api-example-response">{
+  "error": "Unauthorized",
+  "message": "Missing authorization header"
+}</pre>
+            <p class="api-help-text">Common causes: missing Authorization header, invalid header format, or invalid/expired API key.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

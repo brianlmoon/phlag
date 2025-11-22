@@ -1,0 +1,48 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="environment-form">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+    </div>
+
+    <form id="environment-form" data-mode="{{ mode }}" {% if mode == 'edit' %}data-environment-id="{{ environment_id }}"{% endif %}>
+        
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" required 
+                   placeholder="e.g., Production, Staging, Development">
+            <span class="help-text">A descriptive name for this environment.</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create Environment{% else %}Update Environment{% endif %}
+            </button>
+            <a href="{{ base_url }}/environments" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/environment.js"></script>
+<script>
+    // Initialize environment manager
+    document.addEventListener('DOMContentLoaded', function() {
+        EnvironmentManager.init('{{ api_url }}');
+        
+        const form = document.getElementById('environment-form');
+        const mode = form.dataset.mode;
+        
+        if (mode === 'edit') {
+            const environment_id = form.dataset.environmentId;
+            EnvironmentManager.loadForEdit(environment_id);
+        }
+        
+        EnvironmentManager.initForm();
+    });
+</script>
+{% endblock %}

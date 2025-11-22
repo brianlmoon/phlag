@@ -1,0 +1,44 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{{ title }}</h2>
+    <div class="page-actions">
+        <a href="{{ base_url }}/users/create" class="btn btn-primary">Create User</a>
+    </div>
+</div>
+
+<div class="table-container">
+    <table id="users-table" class="data-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th class="hide-mobile">Full Name</th>
+                <th class="hide-mobile">Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="loading-row">
+                <td colspan="4">Loading users...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner">Loading...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/user.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        UserManager.init('{{ api_url }}');
+        UserManager.loadList();
+    });
+</script>
+{% endblock %}

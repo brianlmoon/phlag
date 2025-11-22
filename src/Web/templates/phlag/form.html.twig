@@ -1,0 +1,83 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="phlag-form">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+    </div>
+
+    <form id="phlag-form" data-mode="{{ mode }}" {% if mode == 'edit' %}data-phlag-id="{{ phlag_id }}"{% endif %}>
+        
+        <h2>Flag Definition</h2>
+        
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" required 
+                   {% if mode == 'edit' %}readonly{% endif %}
+                   placeholder="e.g., feature_new_checkout">
+            <span class="help-text">Unique identifier. Allowed characters: a-z, A-Z, 0-9, underscore (_), and hyphen (-).{% if mode == 'edit' %} <strong>Cannot be changed after creation.</strong>{% endif %}</span>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="3" maxlength="1024"
+                      placeholder="e.g., Controls visibility of new checkout flow"></textarea>
+            <span class="help-text">Optional: Brief description of what this flag controls (max 1024 characters).</span>
+        </div>
+
+        <div class="form-group">
+            <label for="type">Type *</label>
+            <select id="type" name="type" required {% if mode == 'edit' %}disabled{% endif %}>
+                <option value="">-- Select Type --</option>
+                <option value="SWITCH">SWITCH</option>
+                <option value="INTEGER">INTEGER</option>
+                <option value="FLOAT">FLOAT</option>
+                <option value="STRING">STRING</option>
+            </select>
+            <span class="help-text">The data type for this flag's value.{% if mode == 'edit' %} <strong>Cannot be changed after creation.</strong>{% endif %}</span>
+        </div>
+
+        <h2>Environment Values</h2>
+        <p class="section-description">
+            Configure values for each environment. Each environment can have a different value
+            and different temporal constraints (start/end dates). Leave an environment empty if
+            you don't want to configure the flag for that environment yet.
+        </p>
+
+        <div id="environment-values-container">
+            <div id="loading" class="loading-indicator">
+                <p>Loading environments...</p>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create Flag{% else %}Update Flag{% endif %}
+            </button>
+            <a href="{{ base_url }}/flags" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/phlag.js"></script>
+<script>
+    // Initialize phlag manager
+    document.addEventListener('DOMContentLoaded', function() {
+        PhlagManager.init('{{ api_url }}');
+        
+        const form = document.getElementById('phlag-form');
+        const mode = form.dataset.mode;
+        
+        if (mode === 'edit') {
+            const phlag_id = form.dataset.phlagId;
+            PhlagManager.loadForEdit(phlag_id);
+        }
+        
+        PhlagManager.initForm();
+    });
+</script>
+{% endblock %}

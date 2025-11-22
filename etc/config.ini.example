@@ -1,0 +1,80 @@
+; Phlag Configuration Example
+;
+; Copy this file to etc/config.ini
+
+; Database Configuration
+[db]
+db.phlag.type   = pgsql, mysql, or sqlite
+db.phlag.db     = database name
+db.phlag.server = server name
+db.phlag.port   = server port
+db.phlag.user   = database user
+db.phlag.pass   = databaes password
+
+; Email Configuration
+; --------------------
+
+; Required: Email address that password reset emails are sent from
+mailer.from.address=noreply@example.com
+
+; Optional: Name displayed in "From" field (default: "Phlag Admin")
+mailer.from.name=Phlag Admin
+
+; Email Method: "smtp" or "mail" (default: "mail")
+; - "smtp": Use SMTP server (recommended for production)
+; - "mail": Use PHP mail() function (requires local mail server)
+mailer.method=smtp
+
+; SMTP Configuration (required if mailer.method=smtp)
+; ------------------------------------------------------
+
+; SMTP server hostname (e.g., smtp.gmail.com, smtp.sendgrid.net)
+mailer.smtp.host=smtp.example.com
+
+; SMTP port (default: 587 for TLS, 465 for SSL)
+mailer.smtp.port=587
+
+; SMTP encryption: "tls" or "ssl" (default: "tls")
+mailer.smtp.encryption=tls
+
+; SMTP authentication credentials (if required by your server)
+mailer.smtp.username=your-smtp-username
+mailer.smtp.password=your-smtp-password
+
+; Session Configuration
+; ---------------------
+
+; Session timeout in seconds (default: 1800 = 30 minutes)
+session.timeout=1800
+
+; Example Configurations
+; ----------------------
+
+; Gmail SMTP:
+; mailer.smtp.host=smtp.gmail.com
+; mailer.smtp.port=587
+; mailer.smtp.encryption=tls
+; mailer.smtp.username=your-email@gmail.com
+; mailer.smtp.password=your-app-specific-password
+
+; SendGrid SMTP:
+; mailer.smtp.host=smtp.sendgrid.net
+; mailer.smtp.port=587
+; mailer.smtp.encryption=tls
+; mailer.smtp.username=apikey
+; mailer.smtp.password=SG.your-sendgrid-api-key
+
+; Mailgun SMTP:
+; mailer.smtp.host=smtp.mailgun.org
+; mailer.smtp.port=587
+; mailer.smtp.encryption=tls
+; mailer.smtp.username=postmaster@your-domain.mailgun.org
+; mailer.smtp.password=your-mailgun-smtp-password
+
+; Development with Mailtrap:
+; mailer.smtp.host=smtp.mailtrap.io
+; mailer.smtp.port=2525
+; mailer.smtp.encryption=tls
+; mailer.smtp.username=your-mailtrap-username
+; mailer.smtp.password=your-mailtrap-password
+

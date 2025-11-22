@@ -1,0 +1,100 @@
+{% extends "layout/base.html.twig" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="card auth-card">
+        <h1>{{ title|default('Reset Token Generated') }}</h1>
+        
+        {% if email_sent is defined and email_sent %}
+            {# Email was sent successfully #}
+            <div class="success-message">
+                <p><strong>Password reset email sent!</strong></p>
+                <p>If a user with that username exists, a password reset email has been sent to the associated email address.</p>
+                <p>Please check your inbox and follow the link in the email to reset your password.</p>
+            </div>
+
+            <div class="info-message" style="margin-top: 20px;">
+                <p><strong>Didn't receive the email?</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; text-align: left;">
+                    <li>Check your spam/junk folder</li>
+                    <li>Make sure you entered the correct username</li>
+                    <li>The reset link expires in 1 hour</li>
+                </ul>
+            </div>
+
+        {% elseif reset_url %}
+            {# Email not sent - show token on screen (development mode) #}
+            <div class="alert alert-warning">
+                <p><strong>Development Mode</strong></p>
+                <p>Email service is not configured. Your password reset token is displayed below.</p>
+                <p>In production, this would be sent to your email address instead.</p>
+            </div>
+
+            <div class="token-display">
+                <p class="help-text">Click the link below or copy the token to reset your password:</p>
+                
+                <div class="form-group">
+                    <label>Reset URL</label>
+                    <input 
+                        type="text" 
+                        id="resetUrl" 
+                        value="{{ reset_url }}" 
+                        readonly
+                        onclick="this.select()"
+                    >
+                    <button type="button" class="btn btn-secondary" onclick="copyToClipboard('resetUrl')">
+                        Copy URL
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label>Token (expires: {{ expires_at }})</label>
+                    <input 
+                        type="text" 
+                        id="resetToken" 
+                        value="{{ token }}" 
+                        readonly
+                        onclick="this.select()"
+                    >
+                    <button type="button" class="btn btn-secondary" onclick="copyToClipboard('resetToken')">
+                        Copy Token
+                    </button>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ reset_url }}" class="btn btn-primary btn-full-width">
+                        Reset Password Now
+                    </a>
+                </div>
+            </div>
+
+        {% else %}
+            {# Generic message (username not found or validation failed) #}
+            <div class="info-message">
+                <p>{{ message|default('If a user with that username exists, a password reset has been initiated.') }}</p>
+            </div>
+        {% endif %}
+
+        <div class="auth-links">
+            <a href="{{ base_url }}/login">Back to Login</a>
+        </div>
+    </div>
+</div>
+
+{% if reset_url %}
+<script>
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    document.execCommand('copy');
+    
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Copied!';
+    setTimeout(() => {
+        button.textContent = originalText;
+    }, 2000);
+}
+</script>
+{% endif %}
+{% endblock %}

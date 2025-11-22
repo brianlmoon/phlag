@@ -1,0 +1,68 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{{ title }}</h2>
+    <div class="page-actions">
+        <a href="{{ base_url }}/users/{{ user_id }}/edit" class="btn btn-primary">Edit</a>
+        <button id="delete-btn" class="btn btn-danger">Delete</button>
+    </div>
+</div>
+
+<div class="detail-view">
+    <div class="detail-group">
+        <label>Username</label>
+        <div id="username" class="detail-value">Loading...</div>
+    </div>
+
+    <div class="detail-group">
+        <label>Full Name</label>
+        <div id="full_name" class="detail-value">Loading...</div>
+    </div>
+
+    <div class="detail-group">
+        <label>Email</label>
+        <div id="email" class="detail-value">Loading...</div>
+    </div>
+
+    <div class="detail-group">
+        <label>Password</label>
+        <div class="detail-value">••••••••</div>
+        <small class="form-help">Passwords are never displayed</small>
+    </div>
+
+    <div class="detail-group">
+        <label>Created</label>
+        <div id="create_datetime" class="detail-value">Loading...</div>
+    </div>
+
+    <div class="detail-group">
+        <label>Last Updated</label>
+        <div id="update_datetime" class="detail-value">Loading...</div>
+    </div>
+</div>
+
+<div class="form-actions">
+    <a href="{{ base_url }}/users" class="btn btn-secondary">Back to Users</a>
+</div>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner">Loading...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/user.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        UserManager.init('{{ api_url }}');
+        UserManager.loadSingle({{ user_id }});
+
+        document.getElementById('delete-btn').addEventListener('click', function() {
+            UserManager.delete({{ user_id }});
+        });
+    });
+</script>
+{% endblock %}

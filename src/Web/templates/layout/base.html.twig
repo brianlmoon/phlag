@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Phlag Admin{% endblock %}</title>
+    <link rel="stylesheet" href="{{ base_url }}/assets/css/styles.css">
+    {% block head %}{% endblock %}
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="site-title">
+                <a href="{{ base_url }}/">
+                    <img src="{{ base_url }}/assets/images/logo.svg" alt="Phlag Admin" class="site-logo">
+                </a>
+            </h1>
+            {% if is_logged_in %}
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle menu">
+                <span class="hamburger-icon"></span>
+            </button>
+            <nav class="main-nav" id="main-nav">
+                <a href="{{ base_url }}/" class="nav-link">Home</a>
+                <a href="{{ base_url }}/flags" class="nav-link">Flags</a>
+                <a href="{{ base_url }}/api-keys" class="nav-link">API Keys</a>
+                <a href="{{ base_url }}/environments" class="nav-link">Environments</a>
+                <a href="{{ base_url }}/users" class="nav-link">Users</a>
+                <div class="nav-user-section">
+                    <span class="nav-separator">|</span>
+                    <span class="nav-user">{{ current_username }}</span>
+                    <a href="{{ base_url }}/logout" class="nav-link">Logout</a>
+                </div>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+        <p>&copy; {{ "now"|date("Y") }} Brian Moon. All rights reserved.</p>
+    </footer>
+
+    {# Core JavaScript - loaded on all pages #}
+    <script src="{{ base_url }}/assets/js/app.js"></script>
+
+    {# Mobile menu toggle #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const mainNav = document.getElementById('main-nav');
+
+            if (mobileMenuToggle && mainNav) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    mainNav.classList.toggle('active');
+                    this.classList.toggle('active');
+                });
+
+                // Close menu when clicking a nav link
+                const navLinks = mainNav.querySelectorAll('.nav-link');
+                navLinks.forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        mainNav.classList.remove('active');
+                        mobileMenuToggle.classList.remove('active');
+                    });
+                });
+            }
+        });
+    </script>
+
+    {# Page-specific JavaScript #}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

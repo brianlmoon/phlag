@@ -1,0 +1,84 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="api-key-form">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+    </div>
+
+    {% if mode == 'create' %}
+    <div class="alert alert-info">
+        <strong>Important:</strong> The API key will only be shown once after creation. 
+        Make sure to copy it immediately as you won't be able to see it again.
+    </div>
+    {% endif %}
+
+    <form id="api-key-form" data-mode="{{ mode }}" {% if mode == 'edit' %}data-api-key-id="{{ api_key_id }}"{% endif %}>
+        
+        <div class="form-group">
+            <label for="description">Description *</label>
+            <input type="text" id="description" name="description" required 
+                   placeholder="e.g., Production API Key for Mobile App">
+            <span class="help-text">A descriptive name to identify this API key.</span>
+        </div>
+
+        {% if mode == 'edit' %}
+        <div class="alert alert-warning">
+            <strong>Note:</strong> The API key value cannot be changed. 
+            You can only update the description. If you need a new key, delete this one and create a new one.
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create API Key{% else %}Update Description{% endif %}
+            </button>
+            <a href="{{ base_url }}/api-keys" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    {% if mode == 'create' %}
+    {# Success modal for showing newly created API key #}
+    <div id="api-key-success-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>API Key Created Successfully!</h2>
+            <p class="alert alert-warning">
+                <strong>Important:</strong> Copy this API key now. You won't be able to see it again!
+            </p>
+            <div class="form-group">
+                <label>Your New API Key:</label>
+                <div class="api-key-display">
+                    <input type="text" id="new-api-key-value" readonly>
+                    <button type="button" id="copy-api-key-btn" class="btn btn-primary">Copy</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="close-modal-btn" class="btn btn-secondary">I've Copied It</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/api_key.js"></script>
+<script>
+    // Initialize API key manager
+    document.addEventListener('DOMContentLoaded', function() {
+        ApiKeyManager.init('{{ api_url }}');
+        
+        const form = document.getElementById('api-key-form');
+        const mode = form.dataset.mode;
+        
+        if (mode === 'edit') {
+            const api_key_id = form.dataset.apiKeyId;
+            ApiKeyManager.loadForEdit(api_key_id);
+        }
+        
+        ApiKeyManager.initForm();
+    });
+</script>
+{% endblock %}

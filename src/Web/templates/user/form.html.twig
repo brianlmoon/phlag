@@ -1,0 +1,115 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>{{ title }}</h2>
+</div>
+
+<form id="user-form" class="form">
+    {% if mode == 'edit' %}
+    <input type="hidden" id="user_id" value="{{ user_id }}">
+    {% endif %}
+
+    <div class="form-group">
+        <label for="username">Username *</label>
+        <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required
+            pattern="[a-zA-Z0-9_-]+"
+            title="Username can only contain letters, numbers, underscores, and hyphens"
+        >
+        <small class="form-help">Letters, numbers, underscores, and hyphens only</small>
+    </div>
+
+    <div class="form-group">
+        <label for="full_name">Full Name *</label>
+        <input 
+            type="text" 
+            id="full_name" 
+            name="full_name" 
+            required
+        >
+    </div>
+
+    <div class="form-group">
+        <label for="email">Email *</label>
+        <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required
+            autocomplete="email"
+        >
+        <small class="form-help">Used for password reset and notifications</small>
+    </div>
+
+    <div class="form-group">
+        <label for="password">
+            Password 
+            {% if mode == 'create' %}*{% endif %}
+            {% if mode == 'edit' %}(leave blank to keep current){% endif %}
+        </label>
+        <input 
+            type="password" 
+            id="password" 
+            name="password"
+            {% if mode == 'create' %}required{% endif %}
+            minlength="8"
+            autocomplete="new-password"
+        >
+        <small class="form-help">Minimum 8 characters</small>
+    </div>
+
+    {% if mode == 'create' %}
+    <div class="form-group">
+        <label for="password_confirm">Confirm Password *</label>
+        <input 
+            type="password" 
+            id="password_confirm" 
+            name="password_confirm" 
+            required
+            minlength="8"
+            autocomplete="new-password"
+        >
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+            {% if mode == 'create' %}Create User{% else %}Update User{% endif %}
+        </button>
+        <a href="{{ base_url }}/users" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner">Loading...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/user.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        UserManager.init('{{ api_url }}');
+        
+        {% if mode == 'edit' %}
+        UserManager.loadForEdit({{ user_id }});
+        {% endif %}
+
+        document.getElementById('user-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            {% if mode == 'create' %}
+            UserManager.create();
+            {% else %}
+            UserManager.update({{ user_id }});
+            {% endif %}
+        });
+    });
+</script>
+{% endblock %}
