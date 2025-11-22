@@ -22,7 +22,7 @@
     "require": {
         "moonspot/value-objects": "^2.1",
         "dealnews/db": "^4.0.5",
-        "pagemill/router": "^2.0",
+        "pagemill/router": "^3.0",
         "dealnews/data-mapper-api": "^2.3.2",
         "twig/twig": "^3.22",
         "php": "^8.4",

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "222b0a65216ea9d512f933f3a52cec0e",
+    "content-hash": "78b09c489846029d727db87bc4f19b50",
     "packages": [
         {
             "name": "dealnews/console",
@@ -347,23 +347,24 @@
         },
         {
             "name": "pagemill/accept",
-            "version": "v2.0.1",
+            "version": "v3.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dealnews/pagemill-accept.git",
-                "reference": "4467b9cef9924ee41e76df9ee8e032d72b0a6d4c"
+                "reference": "be9bfd8b3eec2d6e3176935518cfb8547559ead7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dealnews/pagemill-accept/zipball/4467b9cef9924ee41e76df9ee8e032d72b0a6d4c",
-                "reference": "4467b9cef9924ee41e76df9ee8e032d72b0a6d4c",
+                "url": "https://api.github.com/repos/dealnews/pagemill-accept/zipball/be9bfd8b3eec2d6e3176935518cfb8547559ead7",
+                "reference": "be9bfd8b3eec2d6e3176935518cfb8547559ead7",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.4 || ^8.0"
+                "php": "^8.2"
             },
             "require-dev": {
-                "phpunit/phpunit": "^9.0"
+                "php-parallel-lint/php-parallel-lint": "^1.4",
+                "phpunit/phpunit": "^11"
             },
             "type": "library",
             "autoload": {
@@ -384,9 +385,9 @@
             "description": "Parses the HTTP Accept header and determes the preferred content type",
             "support": {
                 "issues": "https://github.com/dealnews/pagemill-accept/issues",
-                "source": "https://github.com/dealnews/pagemill-accept/tree/v2.0.1"
+                "source": "https://github.com/dealnews/pagemill-accept/tree/v3.0.0"
             },
-            "time": "2022-02-10T19:46:15+00:00"
+            "time": "2025-09-09T19:42:20+00:00"
         },
         {
             "name": "pagemill/pattern",
@@ -433,22 +434,22 @@
         },
         {
             "name": "pagemill/router",
-            "version": "v2.0.2",
+            "version": "v3.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dealnews/pagemill-router.git",
-                "reference": "2bc265ada53bfccc71749eafdf1193e295871a91"
+                "reference": "55876a0f28e27fcb79386627ff7726d6654d1a30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dealnews/pagemill-router/zipball/2bc265ada53bfccc71749eafdf1193e295871a91",
-                "reference": "2bc265ada53bfccc71749eafdf1193e295871a91",
+                "url": "https://api.github.com/repos/dealnews/pagemill-router/zipball/55876a0f28e27fcb79386627ff7726d6654d1a30",
+                "reference": "55876a0f28e27fcb79386627ff7726d6654d1a30",
                 "shasum": ""
             },
             "require": {
-                "pagemill/accept": "~2.0",
+                "pagemill/accept": "^3.0",
                 "pagemill/pattern": "^2.0.1",
-                "php": "^7.4 || ^8.0"
+                "php": "^8.2"
             },
             "require-dev": {
                 "phpunit/phpunit": "^9.0"
@@ -475,9 +476,9 @@
             "homepage": "https://github.com/dealnews/pagemill-router",
             "support": {
                 "issues": "https://github.com/dealnews/pagemill-router/issues",
-                "source": "https://github.com/dealnews/pagemill-router/tree/v2.0.2"
+                "source": "https://github.com/dealnews/pagemill-router/tree/v3.0.0"
             },
-            "time": "2022-02-10T19:49:17+00:00"
+            "time": "2025-09-12T19:53:55+00:00"
         },
         {
             "name": "phpmailer/phpmailer",
