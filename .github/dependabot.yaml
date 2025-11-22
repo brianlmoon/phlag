@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "08:00"
+      timezone: "America/Chicago"
+    versioning-strategy: increase
+    pull-request-branch-name:
+      separator: "-"
+    rebase-strategy: disabled
+    commit-message:
+      prefix: "[DEPENDENCY UPDATE]"
+      prefix-development: "[DEV-DEPENDENCY UPDATE]"
+    open-pull-requests-limit: 3 # setting to zero will disable dependabot (5 is the default)
+    cooldown:
+      default-days: 5
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      # Specify a name for the group, which will be used in pull request titles
+      # and branch names
+      patches:
+        applies-to: version-updates
+        update-types:
+          - "patch"

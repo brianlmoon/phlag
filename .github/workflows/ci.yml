@@ -1,0 +1,33 @@
+name: Testing DealNews\DB
+
+on: [push]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-versions: ['8.4']
+        include:
+          - operating-system: 'ubuntu-latest'
+            php-versions: '8.4'
+            phpunit-versions: 11
+
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Composer Install
+      uses: php-actions/composer@v6
+      with:
+        php_version: ${{ matrix.php-versions }}
+
+    - name: PHPUnit tests
+      uses: php-actions/phpunit@v4
+      with:
+        php_extensions: "pcov"
+        version: "11.5"
+        php_version: ${{ matrix.php-versions }}
