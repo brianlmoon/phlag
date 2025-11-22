@@ -27,7 +27,24 @@ const UserManager = {
         this.api = new ApiClient(api_url);
         
         // Get base URL from current window location
-        this.base_url = window.location.origin;
+        // Extract base path by removing known application routes
+        const pathname = window.location.pathname;
+        const routes = ['/flags', '/api-keys', '/users', '/environments', '/login', '/logout'];
+        let base_path = '';
+        
+        for (const route of routes) {
+            const route_index = pathname.indexOf(route);
+            if (route_index !== -1) {
+                // Check if it's actually a route boundary (followed by / or end of string)
+                const after_route = pathname.charAt(route_index + route.length);
+                if (after_route === '/' || after_route === '' || after_route === '?') {
+                    base_path = pathname.substring(0, route_index);
+                    break;
+                }
+            }
+        }
+        
+        this.base_url = window.location.origin + base_path;
     },
     
     /**
