@@ -26,20 +26,14 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 
 ### Installation
 
-1. **Clone the repository**
+1. **Install via Composer**
 
 ```bash
-git clone https://github.com/brianlmoon/phlag.git
+composer create-project moonspot/phlag
 cd phlag
 ```
 
-2. **Install dependencies**
-
-```bash
-composer install
-```
-
-3. **Set up the database**
+2. **Set up the database**
 
 Choose your database and run the appropriate schema:
 
@@ -54,7 +48,7 @@ psql -U postgres -d your_database -f schema/pgsql.sql
 sqlite3 phlag.db < schema/sqlite.sql
 ```
 
-4. **Configure database connection**
+3. **Configure database connection**
 
 Create `etc/config.ini` from the example:
 
@@ -81,7 +75,7 @@ phlag.base_url_path = /phlag
 
 This ensures API responses generate correct resource URLs. Omit this setting if Phlag is at the domain root.
 
-5. **Configure email (optional, for password reset)**
+4. **Configure email (optional, for password reset)**
 
 Add to `etc/config.ini`:
 
@@ -98,7 +92,7 @@ mailer.smtp.password = your-smtp-password
 
 See `etc/config.ini.example` for detailed email configuration options including Gmail, SendGrid, and Mailgun examples.
 
-6. **Start the application**
+5. **Start the application**
 
 For development, use PHP's built-in server:
 
@@ -108,11 +102,11 @@ php -S localhost:8000 -t public
 
 For production, configure your web server to serve `public/` as the document root.
 
-7. **Create your first user**
+6. **Create your first user**
 
 Navigate to `http://localhost:8000/first-user` and create an admin account. This page only appears when no users exist.
 
-8. **Start managing flags!**
+7. **Start managing flags!**
 
 Log in at `http://localhost:8000/login` and you're ready to create feature flags.
 
