@@ -91,12 +91,14 @@ class EmailService {
      * Initializes PHPMailer with settings from GetConfig.
      * Configures either SMTP or mail() based on mailer.method setting.
      *
+     * @param GetConfig|null $config Optional GetConfig instance for testing
+     *
      * @throws Exception If PHPMailer configuration fails
      */
-    public function __construct() {
+    public function __construct(?GetConfig $config = null) {
 
         $this->mailer = new PHPMailer(true);
-        $this->config = GetConfig::init();
+        $this->config = $config ?? GetConfig::init();
 
         // Configure based on configuration
         $method = $this->config->get('mailer.method') ?? 'mail';

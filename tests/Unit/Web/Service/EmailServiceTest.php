@@ -258,13 +258,15 @@ class EmailServiceTest extends TestCase {
      */
     public function testSMTPConfigurationThrowsExceptionWhenHostMissing(): void {
 
-        // Check if real config exists
-        $real_config = GetConfig::init();
-        if ($real_config->get('mailer.smtp.host') !== null) {
+        $this->clearEmailConfig();
+        
+        // Check if real config file exists by creating fresh GetConfig instance
+        // and checking if it has mailer.smtp.host without environment variables set
+        $test_config = new GetConfig();
+        if ($test_config->get('mailer.smtp.host') !== null) {
             $this->markTestSkipped('Real configuration exists with mailer.smtp.host set');
         }
 
-        $this->clearEmailConfig();
         putenv('mailer_from_address=test@example.com');
         putenv('mailer_method=smtp');
         // Don't set smtp.host
@@ -272,7 +274,8 @@ class EmailServiceTest extends TestCase {
         $this->expectException(Exception::class);
         $this->expectExceptionMessage('mailer.smtp.host configuration is required when using SMTP');
 
-        new EmailService();
+        // Pass fresh GetConfig to avoid cached values from previous tests
+        new EmailService(new GetConfig());
     }
 
     /**
