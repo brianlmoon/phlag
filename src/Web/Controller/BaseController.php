@@ -2,6 +2,7 @@
 
 namespace Moonspot\Phlag\Web\Controller;
 
+use DealNews\GetConfig\GetConfig;
 use Moonspot\Phlag\Web\Security\CsrfToken;
 use Moonspot\Phlag\Web\Security\SessionManager;
 
@@ -209,7 +210,28 @@ abstract class BaseController {
      * constructs the base URL using the Host header. Falls back
      * to localhost if no Host header is present.
      *
-     * @return string Base URL (e.g., "https://example.com")
+     * ## Configuration
+     *
+     * The base URL can be customized using the `phlag.base_url_path`
+     * configuration value. If set, this path is appended to the base URL.
+     * This is useful when Phlag is installed in a subdirectory.
+     *
+     * ## Usage
+     *
+     * ```php
+     * // Default behavior (no base_url_path configured)
+     * $url = $this->determineBaseUrl();
+     * // Returns: "https://example.com"
+     *
+     * // With base_url_path = "/phlag"
+     * $url = $this->determineBaseUrl();
+     * // Returns: "https://example.com/phlag"
+     * ```
+     *
+     * Heads-up: The base_url_path should include a leading slash but
+     * no trailing slash for proper URL construction.
+     *
+     * @return string Base URL (e.g., "https://example.com" or "https://example.com/phlag")
      */
     protected function determineBaseUrl(): string {
 
@@ -221,6 +243,13 @@ abstract class BaseController {
         } else {
             // Fallback for CLI or testing environments
             $base_url = 'http://localhost';
+        }
+
+        // Append configured base URL path if present
+        $config =   GetConfig::init();
+        $base_url_path = $config->get('phlag.base_url_path');
+        if (!empty($base_url_path)) {
+            $base_url .= $base_url_path;
         }
 
         return $base_url;

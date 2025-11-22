@@ -47,6 +47,15 @@ mailer.smtp.password=your-smtp-password
 ; Session timeout in seconds (default: 1800 = 30 minutes)
 session.timeout=1800
 
+; Application Configuration
+; -------------------------
+
+; Base URL path (optional)
+; Use this if Phlag is installed in a subdirectory
+; Example: If Phlag is at https://example.com/phlag, set this to /phlag
+; Leave commented out or empty if Phlag is at the domain root
+; phlag.base_url_path=/phlag
+
 ; Example Configurations
 ; ----------------------
 

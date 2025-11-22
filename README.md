@@ -70,6 +70,17 @@ db.phlag.pass   = your_secure_password
 
 For PostgreSQL, use `type = pgsql`. For SQLite, use `type = sqlite` and set `server` to the path of your .db file.
 
+**Optional: Configure base URL path**
+
+If Phlag is installed in a subdirectory (e.g., `https://example.com/phlag`), add to `etc/config.ini`:
+
+```ini
+[phlag]
+phlag.base_url_path = /phlag
+```
+
+This ensures API responses generate correct resource URLs. Omit this setting if Phlag is at the domain root.
+
 5. **Configure email (optional, for password reset)**
 
 Add to `etc/config.ini`:

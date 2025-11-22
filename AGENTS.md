@@ -197,6 +197,7 @@ public function example(int $foo, string $bar): ?ValueObj {
 8. **Footer spacing** - Use `footer.container` selector for specificity
 9. **Session timeout** - Default 30 minutes, configure via `SESSION_TIMEOUT` env var
 10. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
+11. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
 
 ## File Locations
 

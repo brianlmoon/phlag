@@ -208,13 +208,18 @@ try {
      * - DELETE /api/Phlag/{id}/ - Delete phlag
      * - POST /api/Phlag/_search/ - Search phlags
      *
-     * Same patterns apply to PhlagApiKey and PhlagUser endpoints.
+     * Same patterns apply to PhlagApiKey, PhlagUser, and PhlagEnvironment endpoints.
      *
      * Heads-up: All API endpoints require session authentication.
      * The authentication check happens later in the routing process
      * before executing the DataMapper API actions.
      */
-    $api_routes = $api->getAllRoutes('/api');
+    $config = \DealNews\GetConfig\GetConfig::init();
+    $base_url_path = $config->get('phlag.base_url_path') ?? '';
+    
+    // Determine API route prefix (includes base URL path if configured)
+    $api_prefix = $base_url_path . '/api';
+    $api_routes = $api->getAllRoutes($api_prefix);
 
     /**
      * Define web interface routes
@@ -387,6 +392,72 @@ try {
     ];
 
     /**
+     * Prepend base URL path to web routes if configured
+     *
+     * When Phlag is installed in a subdirectory, all route patterns need
+     * to include the base path prefix. This function modifies route patterns
+     * to include the configured base URL path.
+     *
+     * ## How It Works
+     *
+     * - Exact routes: Prepends base path to pattern
+     * - Regex routes: Injects base path after ^ anchor
+     * - Starts_with routes: Prepends base path to pattern
+     * - Default routes: No modification needed
+     *
+     * ## Examples
+     *
+     * With base_url_path = "/phlag":
+     * - "/login" becomes "/phlag/login"
+     * - "!^/flags/(\d+)$!" becomes "!^/phlag/flags/(\d+)$!"
+     * - "/assets/" becomes "/phlag/assets/"
+     *
+     * @param array  $routes        Array of route definitions
+     * @param string $base_url_path Base URL path to prepend
+     *
+     * @return array Modified route definitions
+     */
+    $prepend_base_path = function (array $routes, string $base_url_path): array {
+        
+        if (empty($base_url_path)) {
+            return $routes;
+        }
+        
+        foreach ($routes as &$route) {
+            if (!isset($route['pattern'])) {
+                continue;
+            }
+            
+            $type = $route['type'] ?? '';
+            
+            if ($type === 'exact' || $type === 'starts_with') {
+                // For exact and starts_with routes, simply prepend the base path
+                $route['pattern'] = $base_url_path . $route['pattern'];
+            } elseif ($type === 'regex') {
+                // For regex routes, inject base path after the opening delimiter and ^
+                // Pattern format: !^/path/pattern$!
+                $pattern = $route['pattern'];
+                $delimiter = $pattern[0];
+                
+                // Check if pattern starts with ^ anchor
+                if (isset($pattern[1]) && $pattern[1] === '^') {
+                    // Inject base path after ^
+                    $route['pattern'] = $delimiter . '^' . $base_url_path . substr($pattern, 2);
+                } else {
+                    // No anchor, prepend after delimiter
+                    $route['pattern'] = $delimiter . $base_url_path . substr($pattern, 1);
+                }
+            }
+            // Default type doesn't need pattern modification
+        }
+        
+        return $routes;
+    };
+    
+    // Apply base path to web routes
+    $web_routes = $prepend_base_path($web_routes, $base_url_path);
+
+    /**
      * Combine API routes with web routes
      *
      * API routes are wrapped in an array because PageMill Router expects
@@ -434,11 +505,34 @@ try {
      *
      * The base URL is used by DataMapper API to generate links in
      * responses (e.g., pagination links, resource URLs).
+     *
+     * ## Configuration
+     *
+     * The base URL can be customized using the `phlag.base_url_path`
+     * configuration value. If set, this path is appended to the base URL.
+     *
+     * ## Usage
+     *
+     * ```php
+     * // Default behavior (no base_url_path configured)
+     * // Base URL: https://example.com
+     *
+     * // With base_url_path = "/phlag"
+     * // Base URL: https://example.com/phlag
+     * ```
+     *
+     * Heads-up: The base_url_path should include a leading slash but
+     * no trailing slash for proper URL construction.
      */
     $base_url = '';
     if (!empty($_SERVER['HTTP_HOST'])) {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $base_url = $protocol . '://' . $_SERVER['HTTP_HOST'];
+        
+        // Append configured base URL path (already retrieved above)
+        if (!empty($base_url_path)) {
+            $base_url .= $base_url_path;
+        }
     }
 
     /**
@@ -867,7 +961,8 @@ try {
                      * Detects request type and returns appropriate format.
                      * API requests get JSON, web requests get HTML.
                      */
-                    $is_api_request = strpos($request_path, '/api/') === 0 ||
+                    $api_check_path = $base_url_path . '/api/';
+                    $is_api_request = strpos($request_path, $api_check_path) === 0 ||
                                       (isset($_SERVER['HTTP_ACCEPT']) &&
                                        strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
