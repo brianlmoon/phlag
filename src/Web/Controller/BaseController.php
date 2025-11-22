@@ -249,6 +249,7 @@ abstract class BaseController {
             $url = $this->base_url . $url;
         }
 
+        http_response_code(307);
         header('Location: ' . $url);
         exit;
     }
