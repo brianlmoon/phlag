@@ -13,6 +13,7 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
 - 📧 **Password Reset**: Email-based password recovery
 - 🗄️ **Multi-Database**: MySQL, PostgreSQL, SQLite support
+- 📦 **Client Libraries**: Official JavaScript and PHP clients available
 
 ## Quick Start
 
@@ -147,7 +148,47 @@ server {
 
 ## Usage
 
-See [QUICKSTART](QUICKSTART.md) for a detailed tutorial of gettings started using the application.
+See [QUICKSTART](QUICKSTART.md) for a detailed tutorial of getting started using the application.
+
+### Client Libraries
+
+Official client libraries are available to simplify integration with Phlag:
+
+#### JavaScript Client
+
+- **Repository**: [phlag-js-client](https://github.com/brianlmoon/phlag-js-client)
+- **Use Cases**: Node.js services
+- **Features**: Promise-based API, TypeScript support, automatic type casting
+
+```javascript
+import PhlagClient from 'phlag-js-client';
+
+const client = new PhlagClient({
+  baseUrl: 'http://localhost:8000',
+  apiKey: 'your-api-key'
+});
+
+const isEnabled = await client.getFlag('feature_checkout');
+```
+
+#### PHP Client
+
+- **Repository**: [phlag-php-client](https://github.com/brianlmoon/phlag-php-client)
+- **Use Cases**: PHP applications, backend services
+- **Features**: Type-safe responses, PSR-compliant, Composer integration
+
+```php
+use Phlag\Client\PhlagClient;
+
+$client = new PhlagClient(
+    'http://localhost:8000',
+    'your-api-key'
+);
+
+$isEnabled = $client->getFlag('feature_checkout');
+```
+
+For other languages or custom integrations, use the Flag API endpoints directly (see below).
 
 ### Managing Flags via Web UI
 
@@ -164,7 +205,7 @@ See [QUICKSTART](QUICKSTART.md) for a detailed tutorial of gettings started usin
 3. **Add users**: Navigate to "Users" → "Create New User"
    - Provide username, full name, email, password
 
-### Using the Flag API
+### Using the Flag API Directly
 
 Phlag provides three endpoints for retrieving flag values. All require Bearer token authentication.
 
