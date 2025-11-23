@@ -1037,5 +1037,101 @@ table td.hide-mobile:nth-child(5) {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
     }
+    
+    /* Search container adjustments for mobile */
+    .search-container {
+        margin-bottom: 1rem;
+    }
+    
+    .search-input-wrapper {
+        width: 100%;
+    }
+    
+    #flag-search {
+        font-size: 0.9rem;
+        padding: 0.5rem 2rem 0.5rem 0.75rem;
+    }
+    
+    .results-counter {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+}
+
+/* ==========================================================================
+   Search Components
+   ========================================================================== */
+
+.search-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#flag-search {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+#flag-search:focus {
+    outline: none;
+    border-color: #04814C;
+    box-shadow: 0 0 0 3px rgba(4, 129, 76, 0.1);
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #999;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.search-clear-btn:hover {
+    color: #333;
+}
+
+.search-clear-btn:focus {
+    outline: 2px solid #04814C;
+    outline-offset: 2px;
+}
+
+.results-counter {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: right;
+}
+
+.results-counter span {
+    font-weight: 600;
+    color: #04814C;
+}
+
+.no-results-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-style: italic;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    margin-bottom: 1rem;
 }
 

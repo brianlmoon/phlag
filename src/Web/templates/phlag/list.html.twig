@@ -16,6 +16,19 @@
     </div>
 
     <div id="phlag-table-container" class="hidden">
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="flag-search" placeholder="Search flags by name, description, or type..." autocomplete="off">
+                <button id="search-clear" class="search-clear-btn hidden" title="Clear search">&times;</button>
+            </div>
+            <div id="results-counter" class="results-counter hidden">
+                Showing <span id="visible-count">0</span> of <span id="total-count">0</span> flags
+            </div>
+        </div>
+        
+        <div id="no-results-message" class="no-results-message hidden">
+            <p>No flags match your search.</p>
+        </div>
         <table id="phlag-table">
             <thead>
                 <tr>

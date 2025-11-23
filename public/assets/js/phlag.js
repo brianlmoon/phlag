@@ -36,6 +36,27 @@ const PhlagManager = {
     environments: [],
     
     /**
+     * Cached flags array for search filtering
+     * 
+     * Stores the complete list of flags loaded from the API. Used
+     * by the search feature to filter table rows without making
+     * additional API calls.
+     * 
+     * @type {Array}
+     */
+    cached_flags: [],
+    
+    /**
+     * Search debounce timer
+     * 
+     * Used to delay search execution until user stops typing.
+     * Prevents excessive DOM updates while typing.
+     * 
+     * @type {number|null}
+     */
+    search_timer: null,
+    
+    /**
      * Initializes the Phlag Manager
      * 
      * @param {string} api_url - Base URL for API endpoints (e.g., '/api')
@@ -141,6 +162,7 @@ const PhlagManager = {
                 if (!data || data.length === 0) {
                     document.getElementById('phlag-table').classList.add('hidden');
                     empty_state.classList.remove('hidden');
+                    document.querySelector('.search-container').classList.add('hidden');
                     return;
                 }
                 
@@ -151,11 +173,17 @@ const PhlagManager = {
                     return name_a.localeCompare(name_b);
                 });
                 
+                // Cache flags for search
+                this.cached_flags = data;
+                
                 // Populate table with phlags
                 data.forEach(phlag => {
                     const row = this._createTableRow(phlag);
                     tbody.appendChild(row);
                 });
+                
+                // Initialize search functionality
+                this.initSearch();
             })
             .catch(error => {
                 UI.hideLoading();
@@ -777,6 +805,177 @@ const PhlagManager = {
                 UI.hideLoading();
                 UI.showMessage('Failed to delete flag: ' + error.message, 'error');
             });
+    },
+    
+    /**
+     * Initializes the search functionality for the flag list
+     * 
+     * Sets up event handlers for the search input and clear button.
+     * Implements debounced search to avoid excessive filtering while
+     * the user is typing.
+     * 
+     * The search filters flags by name, description, and type in a
+     * case-insensitive manner. Results are updated in real-time by
+     * showing/hiding table rows.
+     * 
+     * @return {void}
+     */
+    initSearch: function() {
+        const search_input = document.getElementById('flag-search');
+        const clear_btn = document.getElementById('search-clear');
+        const results_counter = document.getElementById('results-counter');
+        
+        if (!search_input) {
+            return;
+        }
+        
+        // Show results counter
+        results_counter.classList.remove('hidden');
+        this._updateResultsCounter();
+        
+        // Handle search input with debouncing
+        search_input.addEventListener('input', (e) => {
+            const search_term = e.target.value.trim();
+            
+            // Show/hide clear button
+            if (search_term) {
+                clear_btn.classList.remove('hidden');
+            } else {
+                clear_btn.classList.add('hidden');
+            }
+            
+            // Debounce search execution
+            clearTimeout(this.search_timer);
+            this.search_timer = setTimeout(() => {
+                this.filterFlags(search_term);
+            }, 300);
+        });
+        
+        // Handle clear button click
+        clear_btn.addEventListener('click', () => {
+            search_input.value = '';
+            clear_btn.classList.add('hidden');
+            this.filterFlags('');
+            search_input.focus();
+        });
+        
+        // Handle Enter key to immediately execute search
+        search_input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(this.search_timer);
+                this.filterFlags(search_input.value.trim());
+            }
+        });
+    },
+    
+    /**
+     * Filters the flag table rows based on search term
+     * 
+     * Performs case-insensitive search across flag name, description,
+     * and type. Shows matching rows and hides non-matching rows.
+     * Updates the results counter and shows "no results" message when
+     * no flags match.
+     * 
+     * @param {string} search_term - The search query
+     * 
+     * @return {void}
+     */
+    filterFlags: function(search_term) {
+        const tbody = document.getElementById('phlag-tbody');
+        const rows = tbody.getElementsByTagName('tr');
+        const table = document.getElementById('phlag-table');
+        const no_results = document.getElementById('no-results-message');
+        const term_lower = search_term.toLowerCase();
+        
+        let visible_count = 0;
+        
+        // If search is empty, show all rows
+        if (!search_term) {
+            Array.from(rows).forEach(row => {
+                row.style.display = '';
+                visible_count++;
+            });
+            table.classList.remove('hidden');
+            no_results.classList.add('hidden');
+            this._updateResultsCounter(visible_count);
+            return;
+        }
+        
+        // Filter rows based on search term
+        this.cached_flags.forEach((phlag, index) => {
+            const row = rows[index];
+            if (!row) {
+                return;
+            }
+            
+            if (this._matchesSearch(phlag, term_lower)) {
+                row.style.display = '';
+                visible_count++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Show/hide table and no results message
+        if (visible_count === 0) {
+            table.classList.add('hidden');
+            no_results.classList.remove('hidden');
+        } else {
+            table.classList.remove('hidden');
+            no_results.classList.add('hidden');
+        }
+        
+        this._updateResultsCounter(visible_count);
+    },
+    
+    /**
+     * Checks if a flag matches the search term
+     * 
+     * Performs case-insensitive substring matching against the flag's
+     * name, description, and type fields.
+     * 
+     * @param {object} phlag - The flag object to check
+     * @param {string} term_lower - Lowercase search term
+     * 
+     * @return {boolean} True if flag matches search term
+     * 
+     * @private
+     */
+    _matchesSearch: function(phlag, term_lower) {
+        const name = (phlag.name || '').toLowerCase();
+        const description = (phlag.description || '').toLowerCase();
+        const type = (phlag.type || '').toLowerCase();
+        
+        return name.includes(term_lower) ||
+               description.includes(term_lower) ||
+               type.includes(term_lower);
+    },
+    
+    /**
+     * Updates the results counter display
+     * 
+     * Shows "Showing X of Y flags" where X is the number of visible
+     * flags and Y is the total number of flags.
+     * 
+     * @param {number|null} visible_count - Number of visible flags (defaults to total)
+     * 
+     * @return {void}
+     * 
+     * @private
+     */
+    _updateResultsCounter: function(visible_count = null) {
+        const visible_el = document.getElementById('visible-count');
+        const total_el = document.getElementById('total-count');
+        
+        if (!visible_el || !total_el) {
+            return;
+        }
+        
+        const total = this.cached_flags.length;
+        const visible = visible_count !== null ? visible_count : total;
+        
+        visible_el.textContent = visible;
+        total_el.textContent = total;
     },
     
     /**
