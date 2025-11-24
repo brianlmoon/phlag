@@ -111,6 +111,27 @@ Navigate to `http://localhost:8000/first-user` and create an admin account. This
 
 Log in at `http://localhost:8000/login` and you're ready to create feature flags.
 
+### Using Docker
+
+A pre-built Docker image is available at [Docker Hub](https://hub.docker.com/r/brianlmoon/phlag):
+
+```bash
+# Pull the image
+docker pull brianlmoon/phlag
+
+# Run with MySQL (recommended for production)
+docker run -d -p 8000:80 \
+  -e DB_PHLAG_TYPE=mysql \
+  -e DB_PHLAG_HOST=your-mysql-host \
+  -e DB_PHLAG_PORT=3306 \
+  -e DB_PHLAG_DB=phlag \
+  -e DB_PHLAG_USER=phlag_user \
+  -e DB_PHLAG_PASS=your_password \
+  brianlmoon/phlag
+```
+
+Visit `http://localhost:8000/first-user` to create your initial admin user.
+
 ## Web Server Configuration
 
 ### Apache
