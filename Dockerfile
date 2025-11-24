@@ -94,6 +94,7 @@ RUN apt-get install -y \
     php8.4-sqlite3 \
     php8.4-bcmath \
     php8.4-intl \
+    php8.4-yaml \
     curl \
     unzip \
     git && \

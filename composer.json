@@ -20,7 +20,6 @@
         }
     ],
     "require": {
-        "moonspot/value-objects": "^2.1",
         "dealnews/db": "^4.0.5",
         "pagemill/router": "^2.0",
         "dealnews/data-mapper-api": "^2.3.2",

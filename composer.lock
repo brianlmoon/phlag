@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "222b0a65216ea9d512f933f3a52cec0e",
+    "content-hash": "e59a3ca2d9f8b8b62d0002ea6bbf4fa3",
     "packages": [
         {
             "name": "dealnews/console",
