@@ -1,4 +1,4 @@
-name: Testing DealNews\DB
+name: Testing Phlag
 
 on: [push]
 
