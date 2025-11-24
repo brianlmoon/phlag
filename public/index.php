@@ -216,7 +216,7 @@ try {
      */
     $config = \DealNews\GetConfig\GetConfig::init();
     $base_url_path = $config->get('phlag.base_url_path') ?? '';
-    
+
     // Determine API route prefix (includes base URL path if configured)
     $api_prefix = $base_url_path . '/api';
     $api_routes = $api->getAllRoutes($api_prefix);
@@ -418,18 +418,18 @@ try {
      * @return array Modified route definitions
      */
     $prepend_base_path = function (array $routes, string $base_url_path): array {
-        
+
         if (empty($base_url_path)) {
             return $routes;
         }
-        
+
         foreach ($routes as &$route) {
             if (!isset($route['pattern'])) {
                 continue;
             }
-            
+
             $type = $route['type'] ?? '';
-            
+
             if ($type === 'exact' || $type === 'starts_with') {
                 // For exact and starts_with routes, simply prepend the base path
                 $route['pattern'] = $base_url_path . $route['pattern'];
@@ -438,7 +438,7 @@ try {
                 // Pattern format: !^/path/pattern$!
                 $pattern = $route['pattern'];
                 $delimiter = $pattern[0];
-                
+
                 // Check if pattern starts with ^ anchor
                 if (isset($pattern[1]) && $pattern[1] === '^') {
                     // Inject base path after ^
@@ -450,10 +450,10 @@ try {
             }
             // Default type doesn't need pattern modification
         }
-        
+
         return $routes;
     };
-    
+
     // Apply base path to web routes
     $web_routes = $prepend_base_path($web_routes, $base_url_path);
 
@@ -528,7 +528,7 @@ try {
     if (!empty($_SERVER['HTTP_HOST'])) {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $base_url = $protocol . '://' . $_SERVER['HTTP_HOST'];
-        
+
         // Append configured base URL path (already retrieved above)
         if (!empty($base_url_path)) {
             $base_url .= $base_url_path;
@@ -932,7 +932,7 @@ try {
                  * Web requests receive an HTML error page for consistent UX.
                  */
                 $file_path = __DIR__ . $request_path;
-                
+
                 if (file_exists($file_path) && is_file($file_path)) {
                     /**
                      * Serve static file with appropriate Content-Type
@@ -1012,7 +1012,7 @@ try {
      * Heads-up: Status codes are validated to ensure they're in the
      * valid HTTP range (100-599). Invalid codes default to 500.
      */
-    $status_code = $e->getCode();
+    $status_code = (int)$e->getCode();
     if ($status_code < 100 || $status_code >= 600) {
         $status_code = 500;
     }

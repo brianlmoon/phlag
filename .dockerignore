@@ -1,0 +1,31 @@
+# Git files
+.git
+.github
+.gitignore
+
+# IDE and editor files
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Testing and development files
+.phpunit.cache
+phpunit.xml.dist
+tests/
+AGENTS.md
+
+# Documentation files (keep README.md for reference)
+QUICKSTART.md
+README_EMAIL_SETUP.md
+
+# Composer files (will run composer install in container)
+vendor/
+
+# Configuration files (will be mounted or generated)
+etc/config.ini
+
+# Build artifacts
+*.log
