@@ -1,0 +1,13 @@
+#!/bin/sh
+# Nginx runit service script
+#
+# This script runs Nginx in foreground mode under runit supervision.
+# Runit will automatically restart Nginx if it crashes.
+#
+# ## Important
+#
+# - Must use 'exec' to replace shell process
+# - Must run in foreground mode (daemon off)
+# - Logs are handled by runit's svlogd if configured
+
+exec /usr/sbin/nginx -g "daemon off;"

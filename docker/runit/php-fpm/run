@@ -1,0 +1,13 @@
+#!/bin/sh
+# PHP-FPM runit service script
+#
+# This script runs PHP-FPM in foreground mode under runit supervision.
+# Runit will automatically restart PHP-FPM if it crashes.
+#
+# ## Important
+#
+# - Must use 'exec' to replace shell process
+# - Must run in foreground mode (--nodaemonize)
+# - Logs are written to /var/log/php/ as configured in pool.conf
+
+exec /usr/sbin/php-fpm8.4 --nodaemonize --fpm-config /etc/php/8.4/fpm/php-fpm.conf

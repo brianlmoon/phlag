@@ -1,0 +1,104 @@
+# Phlag Docker Compose Configuration
+#
+# This docker-compose.yml provides a complete local development and testing
+# environment for Phlag with MySQL database.
+#
+# ## Services
+#
+# - phlag: Main application (Nginx + PHP-FPM)
+# - mysql: MySQL 8.0 database server
+#
+# ## Quick Start
+#
+# 1. Start the stack:
+#    docker compose up -d
+#
+# 2. Initialize the database:
+#    docker compose exec mysql mysql -uroot -pphlag_root_pass phlag < schema/mysql.sql
+#
+# 3. Access the application:
+#    http://localhost:8000
+#
+# 4. Create your first user:
+#    http://localhost:8000/first-user
+#
+# ## Environment Variables
+#
+# Database credentials are configured below. Modify as needed for your
+# local environment.
+
+services:
+  # Phlag application service
+  phlag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    environment:
+      # Database configuration (DB_PHLAG_ prefix)
+      DB_PHLAG_TYPE: mysql
+      DB_PHLAG_HOST: mysql
+      DB_PHLAG_PORT: 3306
+      DB_PHLAG_DB: phlag
+      DB_PHLAG_USER: phlag_user
+      DB_PHLAG_PASS: phlag_pass
+
+      # Email configuration (optional - defaults to on-screen tokens)
+      # MAILER_FROM_ADDRESS: noreply@example.com
+      # MAILER_METHOD: smtp
+      # SMTP_HOST: smtp.example.com
+      # SMTP_PORT: 587
+      # SMTP_ENCRYPTION: tls
+      # SMTP_USERNAME: your-smtp-username
+      # SMTP_PASSWORD: your-smtp-password
+
+      # Application configuration
+      SESSION_TIMEOUT: 1800
+      # PHLAG_BASE_URL_PATH: ""
+    depends_on:
+      - mysql
+    volumes:
+      # Optional: Mount custom config.ini (overrides environment variables)
+      # - ./etc/config.ini:/app/etc/config.ini:ro
+
+      # Optional: Mount logs for debugging
+      - phlag-nginx-logs:/var/log/nginx
+      - phlag-php-logs:/var/log/php
+    networks:
+      - phlag-network
+    restart: unless-stopped
+
+  # MySQL database service
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: phlag_root_pass
+      MYSQL_DATABASE: phlag
+      MYSQL_USER: phlag_user
+      MYSQL_PASSWORD: phlag_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - phlag-network
+    restart: unless-stopped
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+# Named volumes for data persistence
+volumes:
+  mysql-data:
+    driver: local
+  phlag-nginx-logs:
+    driver: local
+  phlag-php-logs:
+    driver: local
+
+# Network for service communication
+networks:
+  phlag-network:
+    driver: bridge
