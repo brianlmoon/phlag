@@ -14,7 +14,7 @@
         
         <div class="form-group">
             <label for="name">Name *</label>
-            <input type="text" id="name" name="name" required 
+            <input type="text" id="name" name="name" required maxlength="255"
                    {% if mode == 'edit' %}readonly{% endif %}
                    placeholder="e.g., feature_new_checkout">
             <span class="help-text">Unique identifier. Allowed characters: a-z, A-Z, 0-9, underscore (_), and hyphen (-).{% if mode == 'edit' %} <strong>Cannot be changed after creation.</strong>{% endif %}</span>

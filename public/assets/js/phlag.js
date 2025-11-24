@@ -502,14 +502,17 @@ const PhlagManager = {
                 if (type === 'INTEGER') {
                     value_input.setAttribute('type', 'number');
                     value_input.setAttribute('step', '1');
+                    value_input.removeAttribute('maxlength');
                     value_input.placeholder = 'e.g., 100';
                 } else if (type === 'FLOAT') {
                     value_input.setAttribute('type', 'number');
                     value_input.setAttribute('step', 'any');
+                    value_input.removeAttribute('maxlength');
                     value_input.placeholder = 'e.g., 3.14';
                 } else {
                     value_input.setAttribute('type', 'text');
                     value_input.removeAttribute('step');
+                    value_input.setAttribute('maxlength', '255');
                     value_input.placeholder = 'e.g., hello world';
                 }
             }
