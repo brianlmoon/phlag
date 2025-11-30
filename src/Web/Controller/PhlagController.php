@@ -39,6 +39,13 @@ class PhlagController extends BaseController {
      * the controller simple and leverages the existing API. Requires
      * user to be logged in.
      *
+     * ## Enhanced Display (v2.0+)
+     *
+     * When there are 3 or fewer environments configured, environment
+     * values are displayed inline in the table for quick viewing.
+     * With more than 3 environments, a "View Details" link is shown
+     * instead to keep the table manageable.
+     *
      * @return void
      */
     public function list(): void {

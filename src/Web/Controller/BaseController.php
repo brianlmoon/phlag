@@ -261,6 +261,13 @@ abstract class BaseController {
      * Sends a Location header and exits. Use this for post-action
      * redirects (e.g., after form submission).
      *
+     * ## POST-Redirect-GET Pattern
+     *
+     * Uses HTTP 303 (See Other) status code to ensure browsers always
+     * make a GET request after a redirect, preventing form resubmission
+     * and infinite POST loops. This is critical for proper handling of
+     * failed login attempts and other form validation errors.
+     *
      * ## Usage
      *
      * ```php
@@ -278,7 +285,7 @@ abstract class BaseController {
             $url = $this->base_url . $url;
         }
 
-        http_response_code(307);
+        http_response_code(303);
         header('Location: ' . $url);
         exit;
     }

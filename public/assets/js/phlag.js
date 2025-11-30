@@ -136,16 +136,22 @@ const PhlagManager = {
      * with the results. Shows empty state if no phlags exist.
      * Sorts flags by name in ascending order.
      * 
-     * ## Breaking Change (v2.0)
+     * ## Enhanced Display (v2.0+)
      * 
-     * The list now shows a count of configured environments instead
-     * of the flag value. Click "Details" to see environment-specific values.
+     * When 3 or fewer environments exist, environment values are shown
+     * inline in the table. Otherwise, shows "View Details" link.
+     * Loads environments and all environment values for all flags.
      */
     loadList: function() {
         UI.showLoading();
         
-        this.api.get('/Phlag/')
-            .then(data => {
+        // Load flags, environments, and all environment values
+        Promise.all([
+            this.api.get('/Phlag/'),
+            this.loadEnvironments(),
+            this.api.get('/PhlagEnvironmentValue/')
+        ])
+            .then(([flags, environments, all_env_values]) => {
                 UI.hideLoading();
                 
                 const loading = document.getElementById('loading');
@@ -159,7 +165,7 @@ const PhlagManager = {
                 // Clear existing rows
                 tbody.innerHTML = '';
                 
-                if (!data || data.length === 0) {
+                if (!flags || flags.length === 0) {
                     document.getElementById('phlag-table').classList.add('hidden');
                     empty_state.classList.remove('hidden');
                     document.querySelector('.search-container').classList.add('hidden');
@@ -167,18 +173,28 @@ const PhlagManager = {
                 }
                 
                 // Sort flags by name ascending
-                data.sort((a, b) => {
+                flags.sort((a, b) => {
                     const name_a = (a.name || '').toLowerCase();
                     const name_b = (b.name || '').toLowerCase();
                     return name_a.localeCompare(name_b);
                 });
                 
                 // Cache flags for search
-                this.cached_flags = data;
+                this.cached_flags = flags;
+                
+                // Build map of environment values by phlag_id
+                const env_values_map = {};
+                all_env_values.forEach(ev => {
+                    if (!env_values_map[ev.phlag_id]) {
+                        env_values_map[ev.phlag_id] = [];
+                    }
+                    env_values_map[ev.phlag_id].push(ev);
+                });
                 
                 // Populate table with phlags
-                data.forEach(phlag => {
-                    const row = this._createTableRow(phlag);
+                flags.forEach(phlag => {
+                    const phlag_env_values = env_values_map[phlag.phlag_id] || [];
+                    const row = this._createTableRow(phlag, phlag_env_values);
                     tbody.appendChild(row);
                 });
                 
@@ -1004,26 +1020,88 @@ const PhlagManager = {
     /**
      * Creates a table row for a phlag
      * 
-     * Builds a complete table row with all phlag data. Note that environment
-     * values are not loaded at list time, so the Environments column shows
-     * a prompt to view details.
+     * Builds a complete table row with all phlag data. When 3 or fewer
+     * environments exist, displays environment values inline. Otherwise,
+     * shows "View Details" link.
      * 
-     * ## Breaking Change (v2.0)
+     * ## Enhanced Display (v2.0+)
      * 
-     * The row no longer shows value, start_datetime, or end_datetime columns.
-     * Instead it shows description and environment information.
+     * The Environments column adaptively shows:
+     * - Inline values with badges when ≤3 environments configured
+     * - "View Details" link when >3 environments configured
+     * - Properly handles temporal constraints (start/end dates)
      * 
      * @param {object} phlag - Phlag object with all properties
+     * @param {Array} env_values - Array of environment value objects for this flag
      * 
      * @return {HTMLElement} Table row element ready to append
      * 
      * @private
      */
-    _createTableRow: function(phlag) {
+    _createTableRow: function(phlag, env_values = []) {
         const row = document.createElement('tr');
         
         const description = phlag.description ? 
             `<div class="flag-description">${this._escapeHtml(phlag.description)}</div>` : '';
+        
+        // Build environments display
+        let environments_html = '';
+        
+        if (this.environments.length === 0) {
+            environments_html = '<em>No environments</em>';
+        } else if (this.environments.length <= 3) {
+            // Show inline values for each environment
+            const env_displays = [];
+            
+            // Create a map of environment values by environment ID
+            const env_value_map = {};
+            env_values.forEach(ev => {
+                env_value_map[ev.phlag_environment_id] = ev;
+            });
+            
+            this.environments.forEach(env => {
+                const env_value = env_value_map[env.phlag_environment_id];
+                let value_display = '';
+                
+                if (!env_value || env_value.value === null) {
+                    // Not configured or explicitly disabled
+                    value_display = `<span class="env-value env-not-set"><strong>${this._escapeHtml(env.name)}:</strong> <em>—</em></span>`;
+                } else {
+                    // Format value based on type
+                    let display_value = env_value.value;
+                    if (phlag.type === 'SWITCH') {
+                        display_value = env_value.value === 'true' ? '✓' : '✗';
+                    }
+                    
+                    // Determine status class based on temporal constraints
+                    const now = new Date();
+                    let status_class = 'active';
+                    
+                    if (env_value.start_datetime) {
+                        const start = new Date(env_value.start_datetime);
+                        if (now < start) {
+                            status_class = 'scheduled';
+                        }
+                    }
+                    
+                    if (env_value.end_datetime) {
+                        const end = new Date(env_value.end_datetime);
+                        if (now > end) {
+                            status_class = 'expired';
+                        }
+                    }
+                    
+                    value_display = `<span class="env-value env-${status_class}"><strong>${this._escapeHtml(env.name)}:</strong> <code>${this._escapeHtml(display_value)}</code></span>`;
+                }
+                
+                env_displays.push(value_display);
+            });
+            
+            environments_html = env_displays.join('<br>');
+        } else {
+            // Show "View Details" link for many environments
+            environments_html = `<a href="${this.base_url}/flags/${phlag.phlag_id}" class="view-environments">View Details</a>`;
+        }
         
         row.innerHTML = `
             <td>
@@ -1035,7 +1113,7 @@ const PhlagManager = {
             </td>
             <td class="hide-mobile"><span class="badge">${phlag.type || 'N/A'}</span></td>
             <td class="hide-mobile">
-                <a href="${this.base_url}/flags/${phlag.phlag_id}" class="view-environments">View Details</a>
+                ${environments_html}
             </td>
             <td class="actions">
                 <a href="${this.base_url}/flags/${phlag.phlag_id}" class="btn btn-small btn-primary">View</a>
