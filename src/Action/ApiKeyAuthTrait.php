@@ -6,7 +6,20 @@ namespace Moonspot\Phlag\Action;
  * API Key Authentication Trait
  *
  * Provides Bearer token authentication for flag endpoints by validating
- * the Authorization header against API keys stored in the database.
+ * the Authorization header against API keys stored in the database, and
+ * enforcing environment-scoped access control.
+ *
+ * ## Breaking Change (v3.0)
+ *
+ * The `authenticateApiKey()` method now requires an `$environment_name`
+ * parameter to validate that the API key has access to the requested
+ * environment. This enables restricting API keys to specific environments
+ * for improved security.
+ *
+ * ## Access Control Model
+ *
+ * - **No environment assignments** → Unrestricted access (backward compatible)
+ * - **One or more assignments** → Restricted to only those environments
  *
  * ## Usage
  *
@@ -20,8 +33,10 @@ namespace Moonspot\Phlag\Action;
  *
  *     public function loadData(): array {
  *         // Authenticate before processing
- *         if (!$this->authenticateApiKey()) {
- *             return []; // Already responded with 401
+ *         $auth_error = $this->authenticateApiKey($this->environment);
+ *         
+ *         if ($auth_error !== null) {
+ *             return $auth_error;
  *         }
  *         // Continue with normal processing
  *     }
@@ -32,7 +47,8 @@ namespace Moonspot\Phlag\Action;
  *
  * - Requires Bearer token in Authorization header
  * - Token must exactly match an api_key in phlag_api_keys table
- * - Returns 401 Unauthorized if authentication fails
+ * - Validates API key has access to requested environment
+ * - Returns 401 Unauthorized if authentication or authorization fails
  * - Generic error messages prevent API key enumeration
  *
  * @package Moonspot\Phlag\Action
@@ -40,17 +56,19 @@ namespace Moonspot\Phlag\Action;
 trait ApiKeyAuthTrait {
 
     /**
-     * Authenticates the request using Bearer token
+     * Authenticates API key and validates environment access
      *
-     * Extracts the Bearer token from the Authorization header and validates
-     * it against the phlag_api_keys table. If authentication fails, returns
-     * an error response array.
+     * Validates the Bearer token and checks if the API key has access
+     * to the requested environment. API keys with no environment assignments
+     * have unrestricted access (backward compatible).
      *
      * ## How It Works
      *
      * - Checks for Authorization header
      * - Extracts Bearer token from header
      * - Queries database for matching API key
+     * - Validates environment exists
+     * - Checks if API key is authorized for environment
      * - Returns null if valid, error array otherwise
      *
      * ## Edge Cases
@@ -58,11 +76,15 @@ trait ApiKeyAuthTrait {
      * - Missing Authorization header returns error array
      * - Invalid header format (not "Bearer <token>") returns error array
      * - Token not found in database returns error array
+     * - Non-existent environment returns error array
+     * - API key not authorized for environment returns error array
      * - All error messages are generic to prevent enumeration
      *
-     * @return ?array Returns null if authenticated, error response array otherwise
+     * @param string $environment_name Environment name to validate access for
+     *
+     * @return ?array Returns null if authenticated and authorized, error response array otherwise
      */
-    protected function authenticateApiKey(): ?array {
+    protected function authenticateApiKey(string $environment_name): ?array {
 
         $auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
@@ -79,9 +101,16 @@ trait ApiKeyAuthTrait {
             return $this->getUnauthorizedResponse('Invalid authorization header format');
         }
 
-        // Validate token against database
-        if (!$this->validateApiKey($token)) {
+        // Validate token and get API key record
+        $api_key = $this->getValidApiKey($token);
+        
+        if ($api_key === null) {
             return $this->getUnauthorizedResponse('Invalid API key');
+        }
+
+        // Validate environment access
+        if (!$this->validateEnvironmentAccess($api_key->plag_api_key_id, $environment_name)) {
+            return $this->getUnauthorizedResponse('API key not authorized for this environment');
         }
 
         return null;
@@ -123,21 +152,20 @@ trait ApiKeyAuthTrait {
     }
 
     /**
-     * Validates API key against database
+     * Retrieves API key record if valid
      *
-     * Queries the phlag_api_keys table to check if the provided token
-     * exists. Returns true if found, false otherwise.
+     * Returns the PhlagApiKey object if found, null otherwise.
      *
      * Heads-up: This method requires the repository property to be set,
      * which is provided by the Base class that actions extend.
      *
      * @param string $token The API key token to validate
      *
-     * @return bool Returns true if API key exists, false otherwise
+     * @return ?\Moonspot\Phlag\Data\PhlagApiKey API key object or null
      */
-    protected function validateApiKey(string $token): bool {
+    protected function getValidApiKey(string $token): ?\Moonspot\Phlag\Data\PhlagApiKey {
 
-        $is_valid = false;
+        $api_key = null;
 
         // Search for API key in database
         $results = $this->repository->find(
@@ -145,12 +173,78 @@ trait ApiKeyAuthTrait {
             ['api_key' => $token]
         );
 
-        // If we found a matching key, it's valid
+        // If we found a matching key, return it
         if (!empty($results)) {
-            $is_valid = true;
+            $api_key = reset($results);
         }
 
-        return $is_valid;
+        return $api_key;
+    }
+
+    /**
+     * Validates API key has access to environment
+     *
+     * Checks if the API key is authorized for the requested environment.
+     * API keys with no environment assignments have unrestricted access.
+     *
+     * ## Logic
+     *
+     * - If no environments assigned to key → Allow (global access)
+     * - If environments assigned → Check if requested environment is in list
+     *
+     * ## Edge Cases
+     *
+     * - Non-existent environment returns false
+     * - Empty environment name returns false
+     * - Invalid API key ID returns false
+     *
+     * @param int    $api_key_id      API key ID
+     * @param string $environment_name Environment name to check
+     *
+     * @return bool Returns true if authorized, false otherwise
+     */
+    protected function validateEnvironmentAccess(int $api_key_id, string $environment_name): bool {
+
+        $is_authorized = false;
+
+        // Validate inputs
+        if ($api_key_id <= 0 || empty($environment_name)) {
+            return false;
+        }
+
+        // Get environment record
+        $environments = $this->repository->find(
+            'PhlagEnvironment',
+            ['name' => $environment_name]
+        );
+
+        if (empty($environments)) {
+            // Environment doesn't exist - deny access
+            return false;
+        }
+
+        $environment = reset($environments);
+
+        // Get all environment assignments for this API key
+        $assignments = $this->repository->find(
+            'PhlagApiKeyEnvironment',
+            ['plag_api_key_id' => $api_key_id]
+        );
+
+        // No assignments = unrestricted access (backward compatible)
+        if (empty($assignments)) {
+            $is_authorized = true;
+        } else {
+            // Check if requested environment is in the assigned list
+            foreach ($assignments as $assignment) {
+                if ($assignment->phlag_environment_id === $environment->phlag_environment_id) {
+                    $is_authorized = true;
+                    break;
+                }
+            }
+        }
+
+        return $is_authorized;
     }
 
     /**

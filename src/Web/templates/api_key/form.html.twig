@@ -24,6 +24,19 @@
             <span class="help-text">A descriptive name to identify this API key.</span>
         </div>
 
+        <div class="form-group">
+            <label>Environment Access</label>
+            <p class="help-text">Select which environments this API key can access. Leave all unchecked for unrestricted access to all environments.</p>
+            
+            <div id="environment-checkboxes" class="checkbox-group">
+                {# Populated by JavaScript #}
+            </div>
+            
+            <div id="environment-loading" class="text-muted">
+                Loading environments...
+            </div>
+        </div>
+
         {% if mode == 'edit' %}
         <div class="alert alert-warning">
             <strong>Note:</strong> The API key value cannot be changed. 

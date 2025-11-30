@@ -62,6 +62,19 @@ CREATE TABLE `phlag_environment_values` (
     CONSTRAINT `fk_env_value_environment` FOREIGN KEY (`phlag_environment_id`) REFERENCES `phlag_environments` (`phlag_environment_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `phlag_api_key_environments` (
+    `phlag_api_key_environment_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+    `plag_api_key_id` bigint unsigned NOT NULL,
+    `phlag_environment_id` bigint unsigned NOT NULL,
+    `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`phlag_api_key_environment_id`),
+    UNIQUE KEY `api_key_environment` (`plag_api_key_id`, `phlag_environment_id`),
+    KEY `plag_api_key_id` (`plag_api_key_id`),
+    KEY `phlag_environment_id` (`phlag_environment_id`),
+    CONSTRAINT `fk_api_key_env_key` FOREIGN KEY (`plag_api_key_id`) REFERENCES `phlag_api_keys` (`plag_api_key_id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_api_key_env_environment` FOREIGN KEY (`phlag_environment_id`) REFERENCES `phlag_environments` (`phlag_environment_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 CREATE TABLE `phlag_password_reset_tokens` (
     `phlag_password_reset_token_id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `phlag_user_id` bigint unsigned NOT NULL,

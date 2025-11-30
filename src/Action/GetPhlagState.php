@@ -135,7 +135,7 @@ class GetPhlagState extends Base {
      */
     public function loadData(): array {
 
-        $auth_error = $this->authenticateApiKey();
+        $auth_error = $this->authenticateApiKey($this->environment);
         if ($auth_error !== null) {
             return $auth_error;
         }

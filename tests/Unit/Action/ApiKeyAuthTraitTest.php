@@ -64,11 +64,17 @@ class ApiKeyAuthTraitTest extends TestCase {
      * Creates a concrete class that uses ApiKeyAuthTrait with a mocked
      * repository for testing authentication methods.
      *
-     * @param array $api_keys Array of valid API keys for mock repository
+     * @param array $api_keys     Array of valid API keys for mock repository
+     * @param array $environments Array of valid environments for mock repository
+     * @param array $assignments  Array of API key environment assignments
      *
      * @return object Test class instance
      */
-    protected function createTestClass(array $api_keys = []): object {
+    protected function createTestClass(
+        array $api_keys = [],
+        array $environments = [],
+        array $assignments = []
+    ): object {
 
         // Create a concrete class that uses the trait
         $test_class = new class {
@@ -81,16 +87,20 @@ class ApiKeyAuthTraitTest extends TestCase {
             }
 
             // Make protected methods public for testing
-            public function publicAuthenticateApiKey(): ?array {
-                return $this->authenticateApiKey();
+            public function publicAuthenticateApiKey(string $environment_name): ?array {
+                return $this->authenticateApiKey($environment_name);
             }
 
             public function publicExtractBearerToken(string $auth_header): ?string {
                 return $this->extractBearerToken($auth_header);
             }
 
-            public function publicValidateApiKey(string $token): bool {
-                return $this->validateApiKey($token);
+            public function publicGetValidApiKey(string $token): mixed {
+                return $this->getValidApiKey($token);
+            }
+
+            public function publicValidateEnvironmentAccess(int $api_key_id, string $environment_name): bool {
+                return $this->validateEnvironmentAccess($api_key_id, $environment_name);
             }
 
             public function publicGetUnauthorizedResponse(string $message): array {
@@ -101,14 +111,37 @@ class ApiKeyAuthTraitTest extends TestCase {
         // Mock repository
         $repository = $this->createMock(Repository::class);
         $repository->method('find')
-            ->willReturnCallback(function ($entity, $criteria) use ($api_keys) {
+            ->willReturnCallback(function ($entity, $criteria) use ($api_keys, $environments, $assignments) {
                 if ($entity === 'PhlagApiKey' && isset($criteria['api_key'])) {
                     $token = $criteria['api_key'];
-                    if (in_array($token, $api_keys)) {
-                        return [
-                            ['phlag_api_key_id' => 1, 'api_key' => $token],
-                        ];
+                    if (isset($api_keys[$token])) {
+                        $api_key = new \Moonspot\Phlag\Data\PhlagApiKey();
+                        $api_key->plag_api_key_id = $api_keys[$token];
+                        $api_key->api_key = $token;
+                        return [$api_key];
                     }
+                }
+                if ($entity === 'PhlagEnvironment' && isset($criteria['name'])) {
+                    $name = $criteria['name'];
+                    if (isset($environments[$name])) {
+                        $env = new \Moonspot\Phlag\Data\PhlagEnvironment();
+                        $env->phlag_environment_id = $environments[$name];
+                        $env->name = $name;
+                        return [$env];
+                    }
+                }
+                if ($entity === 'PhlagApiKeyEnvironment' && isset($criteria['plag_api_key_id'])) {
+                    $api_key_id = $criteria['plag_api_key_id'];
+                    $results = [];
+                    foreach ($assignments as $assignment) {
+                        if ($assignment['plag_api_key_id'] === $api_key_id) {
+                            $assign = new \Moonspot\Phlag\Data\PhlagApiKeyEnvironment();
+                            $assign->plag_api_key_id = $assignment['plag_api_key_id'];
+                            $assign->phlag_environment_id = $assignment['phlag_environment_id'];
+                            $results[] = $assign;
+                        }
+                    }
+                    return $results;
                 }
                 return [];
             });
@@ -231,54 +264,55 @@ class ApiKeyAuthTraitTest extends TestCase {
     }
 
     /**
-     * Tests validateApiKey returns true for valid key
+     * Tests getValidApiKey returns object for valid key
      *
-     * Verifies that validateApiKey returns true when the token
-     * exists in the database.
+     * Verifies that getValidApiKey returns a PhlagApiKey object when
+     * the token exists in the database.
      *
      * @return void
      */
     public function testValidateApiKeyReturnsTrueForValidKey(): void {
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1]);
 
-        $is_valid = $test_class->publicValidateApiKey('valid_key_123');
+        $api_key = $test_class->publicGetValidApiKey('valid_key_123');
 
-        $this->assertTrue($is_valid);
+        $this->assertInstanceOf(\Moonspot\Phlag\Data\PhlagApiKey::class, $api_key);
+        $this->assertSame(1, $api_key->plag_api_key_id);
     }
 
     /**
-     * Tests validateApiKey returns false for invalid key
+     * Tests getValidApiKey returns null for invalid key
      *
-     * Verifies that validateApiKey returns false when the token
+     * Verifies that getValidApiKey returns null when the token
      * does not exist in the database.
      *
      * @return void
      */
     public function testValidateApiKeyReturnsFalseForInvalidKey(): void {
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1]);
 
-        $is_valid = $test_class->publicValidateApiKey('invalid_key');
+        $api_key = $test_class->publicGetValidApiKey('invalid_key');
 
-        $this->assertFalse($is_valid);
+        $this->assertNull($api_key);
     }
 
     /**
-     * Tests validateApiKey returns false for empty key
+     * Tests getValidApiKey returns null for empty key
      *
-     * Verifies that validateApiKey returns false when given
+     * Verifies that getValidApiKey returns null when given
      * an empty string.
      *
      * @return void
      */
     public function testValidateApiKeyReturnsFalseForEmptyKey(): void {
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1]);
 
-        $is_valid = $test_class->publicValidateApiKey('');
+        $api_key = $test_class->publicGetValidApiKey('');
 
-        $this->assertFalse($is_valid);
+        $this->assertNull($api_key);
     }
 
     /**
@@ -316,9 +350,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer valid_key_123';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertNull($result);
     }
@@ -335,9 +369,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         unset($_SERVER['HTTP_AUTHORIZATION']);
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertIsArray($result);
         $this->assertSame(401, $result['http_status']);
@@ -356,9 +390,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = '';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertIsArray($result);
         $this->assertSame(401, $result['http_status']);
@@ -377,9 +411,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Basic abc123';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertIsArray($result);
         $this->assertSame(401, $result['http_status']);
@@ -398,9 +432,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer invalid_key';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertIsArray($result);
         $this->assertSame(401, $result['http_status']);
@@ -419,9 +453,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'bearer valid_key_123';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertNull($result);
     }
@@ -438,9 +472,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer   valid_key_123   ';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertNull($result);
     }
@@ -457,9 +491,9 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ';
 
-        $test_class = $this->createTestClass(['valid_key_123']);
+        $test_class = $this->createTestClass(['valid_key_123' => 1], ['production' => 1]);
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertIsArray($result);
         $this->assertSame(401, $result['http_status']);
@@ -478,9 +512,12 @@ class ApiKeyAuthTraitTest extends TestCase {
 
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer key2';
 
-        $test_class = $this->createTestClass(['key1', 'key2', 'key3']);
+        $test_class = $this->createTestClass(
+            ['key1' => 1, 'key2' => 2, 'key3' => 3],
+            ['production' => 1]
+        );
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertNull($result);
     }
@@ -498,9 +535,12 @@ class ApiKeyAuthTraitTest extends TestCase {
         $long_key = str_repeat('a', 64);
         $_SERVER['HTTP_AUTHORIZATION'] = "Bearer {$long_key}";
 
-        $test_class = $this->createTestClass([$long_key]);
+        $test_class = $this->createTestClass(
+            [$long_key => 1],
+            ['production' => 1]
+        );
 
-        $result = $test_class->publicAuthenticateApiKey();
+        $result = $test_class->publicAuthenticateApiKey('production');
 
         $this->assertNull($result);
     }
@@ -523,9 +563,9 @@ class ApiKeyAuthTraitTest extends TestCase {
     }
 
     /**
-     * Tests validateApiKey with special characters
+     * Tests getValidApiKey with special characters
      *
-     * Verifies that validateApiKey works with tokens containing
+     * Verifies that getValidApiKey works with tokens containing
      * special characters.
      *
      * @return void
@@ -533,11 +573,11 @@ class ApiKeyAuthTraitTest extends TestCase {
     public function testValidateApiKeyWithSpecialCharacters(): void {
 
         $special_key = 'abc-123_DEF/456+789=';
-        $test_class = $this->createTestClass([$special_key]);
+        $test_class = $this->createTestClass([$special_key => 1]);
 
-        $is_valid = $test_class->publicValidateApiKey($special_key);
+        $api_key = $test_class->publicGetValidApiKey($special_key);
 
-        $this->assertTrue($is_valid);
+        $this->assertInstanceOf(\Moonspot\Phlag\Data\PhlagApiKey::class, $api_key);
     }
 
     /**

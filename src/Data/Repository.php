@@ -71,6 +71,7 @@ class Repository extends \DealNews\DataMapper\Repository {
      * Automatically instantiates and registers the following mappers:
      * - Phlag: Maps to the phlags table
      * - PhlagApiKey: Maps to the phlag_api_keys table
+     * - PhlagApiKeyEnvironment: Maps to the phlag_api_key_environments table
      * - PhlagUser: Maps to the phlag_users table
      * - PhlagEnvironment: Maps to the phlag_environments table
      * - PhlagEnvironmentValue: Maps to the phlag_environment_values table
@@ -83,12 +84,13 @@ class Repository extends \DealNews\DataMapper\Repository {
     public function __construct(array $mappers = []) {
 
         $default_mappers = [
-            'Phlag'                 => new \Moonspot\Phlag\Mapper\Phlag(),
-            'PhlagApiKey'           => new \Moonspot\Phlag\Mapper\PhlagApiKey(),
-            'PhlagUser'             => new \Moonspot\Phlag\Mapper\PhlagUser(),
-            'PhlagEnvironment'      => new \Moonspot\Phlag\Mapper\PhlagEnvironment(),
-            'PhlagEnvironmentValue' => new \Moonspot\Phlag\Mapper\PhlagEnvironmentValue(),
-            'PasswordResetToken'    => new \Moonspot\Phlag\Mapper\PasswordResetToken(),
+            'Phlag'                    => new \Moonspot\Phlag\Mapper\Phlag(),
+            'PhlagApiKey'              => new \Moonspot\Phlag\Mapper\PhlagApiKey(),
+            'PhlagApiKeyEnvironment'   => new \Moonspot\Phlag\Mapper\PhlagApiKeyEnvironment(),
+            'PhlagUser'                => new \Moonspot\Phlag\Mapper\PhlagUser(),
+            'PhlagEnvironment'         => new \Moonspot\Phlag\Mapper\PhlagEnvironment(),
+            'PhlagEnvironmentValue'    => new \Moonspot\Phlag\Mapper\PhlagEnvironmentValue(),
+            'PasswordResetToken'       => new \Moonspot\Phlag\Mapper\PasswordResetToken(),
         ];
 
         $all_mappers = array_merge($default_mappers, $mappers);

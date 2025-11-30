@@ -53,6 +53,19 @@ CREATE TABLE phlag_environment_values (
 CREATE INDEX idx_env_values_phlag ON phlag_environment_values(phlag_id);
 CREATE INDEX idx_env_values_environment ON phlag_environment_values(phlag_environment_id);
 
+CREATE TABLE phlag_api_key_environments (
+    phlag_api_key_environment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plag_api_key_id INTEGER NOT NULL,
+    phlag_environment_id INTEGER NOT NULL,
+    create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (plag_api_key_id) REFERENCES phlag_api_keys(plag_api_key_id) ON DELETE CASCADE,
+    FOREIGN KEY (phlag_environment_id) REFERENCES phlag_environments(phlag_environment_id) ON DELETE CASCADE,
+    UNIQUE (plag_api_key_id, phlag_environment_id)
+);
+
+CREATE INDEX idx_api_key_env_key ON phlag_api_key_environments(plag_api_key_id);
+CREATE INDEX idx_api_key_env_environment ON phlag_api_key_environments(phlag_environment_id);
+
 CREATE TABLE phlag_password_reset_tokens (
     phlag_password_reset_token_id INTEGER PRIMARY KEY AUTOINCREMENT,
     phlag_user_id INTEGER NOT NULL,
