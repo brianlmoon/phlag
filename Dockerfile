@@ -141,10 +141,6 @@ COPY docker/runit/nginx/run /etc/service/nginx/run
 COPY docker/runit/php-fpm/run /etc/service/php-fpm/run
 RUN chmod +x /etc/service/nginx/run /etc/service/php-fpm/run
 
-# Install startup configuration script
-COPY docker/scripts/01_setup_config.sh /etc/my_init.d/01_setup_config.sh
-RUN chmod +x /etc/my_init.d/01_setup_config.sh
-
 # Create required directories
 RUN mkdir -p /app/etc \
     /var/lib/php/sessions \
