@@ -238,7 +238,11 @@ abstract class BaseController {
         $base_url = '';
 
         if (!empty($_SERVER['HTTP_HOST'])) {
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            if(getenv('FORCE_HTTPS')) {
+                $protocol = 'https';
+            } else {
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            }
             $base_url = $protocol . '://' . $_SERVER['HTTP_HOST'];
         } else {
             // Fallback for CLI or testing environments
