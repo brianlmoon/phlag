@@ -116,17 +116,24 @@ const PhlagManager = {
     /**
      * Loads all environment values for a specific flag
      * 
-     * Makes a GET request to /api/PhlagEnvironmentValue searching by
-     * phlag_id. Returns all environment-specific values for the flag.
+     * Makes a GET request to /api/PhlagEnvironmentValue with a filter
+     * parameter to search by phlag_id. Returns all environment-specific 
+     * values for the flag.
+     * 
+     * Note: Changed from POST /_search/ to GET with filter parameter
+     * due to issues with the search API returning incorrect results.
      * 
      * @param {number} phlag_id - Phlag ID to load values for
      * 
      * @return {Promise} Resolves with array of environment values
      */
     loadEnvironmentValues: function(phlag_id) {
-        return this.api.post('/PhlagEnvironmentValue/_search/', {
-            phlag_id: parseInt(phlag_id)
-        });
+        // Use GET with filtering instead of _search endpoint
+        return this.api.get('/PhlagEnvironmentValue/')
+            .then(all_values => {
+                // Filter client-side for the specific phlag_id
+                return all_values.filter(ev => ev.phlag_id === parseInt(phlag_id));
+            });
     },
     
     /**
@@ -1063,35 +1070,60 @@ const PhlagManager = {
                 const env_value = env_value_map[env.phlag_environment_id];
                 let value_display = '';
                 
-                if (!env_value || env_value.value === null) {
+                if (!env_value || env_value.value === null || env_value.value === '') {
                     // Not configured or explicitly disabled
                     value_display = `<span class="env-value env-not-set"><strong>${this._escapeHtml(env.name)}:</strong> <em>—</em></span>`;
                 } else {
-                    // Format value based on type
-                    let display_value = env_value.value;
-                    if (phlag.type === 'SWITCH') {
-                        display_value = env_value.value === 'true' ? '✓' : '✗';
-                    }
-                    
-                    // Determine status class based on temporal constraints
+                    // Determine temporal status first
                     const now = new Date();
-                    let status_class = 'active';
+                    let is_expired = false;
+                    let is_scheduled = false;
                     
                     if (env_value.start_datetime) {
                         const start = new Date(env_value.start_datetime);
                         if (now < start) {
-                            status_class = 'scheduled';
+                            is_scheduled = true;
                         }
                     }
                     
                     if (env_value.end_datetime) {
                         const end = new Date(env_value.end_datetime);
                         if (now > end) {
-                            status_class = 'expired';
+                            is_expired = true;
                         }
                     }
                     
-                    value_display = `<span class="env-value env-${status_class}"><strong>${this._escapeHtml(env.name)}:</strong> <code>${this._escapeHtml(display_value)}</code></span>`;
+                    // Format value and determine final class
+                    let display_value = env_value.value;
+                    let final_class = 'active';
+                    
+                    if (phlag.type === 'SWITCH') {
+                        const is_true = env_value.value === 'true';
+                        
+                        // Determine effective state for switches
+                        if (!is_true || is_expired) {
+                            // False OR expired true = effectively disabled (red X)
+                            display_value = '✗';
+                            final_class = 'false';
+                        } else if (is_scheduled) {
+                            // True but scheduled (yellow checkmark)
+                            display_value = '✓';
+                            final_class = 'scheduled';
+                        } else {
+                            // True and active (green checkmark)
+                            display_value = '✓';
+                            final_class = 'active';
+                        }
+                    } else {
+                        // Non-switch types use temporal status
+                        if (is_expired) {
+                            final_class = 'expired';
+                        } else if (is_scheduled) {
+                            final_class = 'scheduled';
+                        }
+                    }
+                    
+                    value_display = `<span class="env-value env-${final_class}"><strong>${this._escapeHtml(env.name)}:</strong> <code>${this._escapeHtml(display_value)}</code></span>`;
                 }
                 
                 env_displays.push(value_display);
@@ -1107,9 +1139,6 @@ const PhlagManager = {
             <td>
                 <a href="${this.base_url}/flags/${phlag.phlag_id}">${this._escapeHtml(phlag.name)}</a>
                 ${description}
-            </td>
-            <td class="hide-mobile">
-                <div class="flag-description-truncate">${phlag.description ? this._escapeHtml(phlag.description) : '<em>No description</em>'}</div>
             </td>
             <td class="hide-mobile"><span class="badge">${phlag.type || 'N/A'}</span></td>
             <td class="hide-mobile">

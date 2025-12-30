@@ -209,6 +209,8 @@ public function example(int $foo, string $bar): ?ValueObj {
 - **Sorting**: Alphabetical by name (A-Z)
 - **API Keys**: Masked except creation modal (`abcd****xyz9`)
 - **Passwords**: Never displayed (bullets)
+- **Switch Flags**: ✓ (green) for true/active, ✗ (red) for false or expired
+- **Environment Values**: Show inline when ≤3 environments, "View Details" link when >3
 
 ## Important Implementation Notes
 
@@ -225,8 +227,9 @@ public function example(int $foo, string $bar): ?ValueObj {
 11. **Repository API** - `save(string $type, object $value)`, `delete(string $name, $id)`, `get(string $name, $id)`, `find(string $name, array $filters)`
 12. **Non-auto-increment PKs** - Override save() method to skip lastInsertId() call (see PhlagSession mapper)
 13. **PostgreSQL compatibility** - lastInsertId() fails without sequences; use TEXT not bytea for session data
-14. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
-15. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
+14. **Data-mapper-api search bug** - Use GET with client-side filtering instead of POST _search endpoint for reliability
+15. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
+16. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
 
 ## File Locations
 
