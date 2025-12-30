@@ -494,7 +494,7 @@ table td.hide-mobile:nth-child(5) {
         gap: 1rem;
         align-items: start;
     }
-    
+
     .environment-value-section .form-row .form-group {
         margin-bottom: 0;
     }
@@ -1037,21 +1037,21 @@ table td.hide-mobile:nth-child(5) {
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
     }
-    
+
     /* Search container adjustments for mobile */
     .search-container {
         margin-bottom: 1rem;
     }
-    
+
     .search-input-wrapper {
         width: 100%;
     }
-    
+
     #flag-search {
         font-size: 0.9rem;
         padding: 0.5rem 2rem 0.5rem 0.75rem;
     }
-    
+
     .results-counter {
         font-size: 0.85rem;
         margin-top: 0.5rem;
@@ -1146,6 +1146,7 @@ table td.hide-mobile:nth-child(5) {
     border-radius: 4px;
     font-size: 0.875rem;
     line-height: 1.4;
+    white-space: nowrap;
 }
 
 .env-value strong {
