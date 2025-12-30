@@ -66,12 +66,29 @@ class SessionManager {
      * initial activity timestamp. If a session already exists, validates
      * it hasn't timed out.
      *
+     * ## Session Handler Selection
+     *
+     * Automatically registers DatabaseSessionHandler if configured via
+     * the `session.handler` configuration value. Valid options:
+     * - 'database': Use database-backed session storage
+     * - 'files': Use PHP's default file-based storage (default)
+     *
      * ## How It Works
      *
+     * - Checks configuration for session.handler preference
+     * - Registers DatabaseSessionHandler if set to 'database'
      * - Calls session_start() if session isn't already active
      * - Sets initial last_activity timestamp for new sessions
      * - Sets session_created timestamp for new sessions
      * - Validates existing sessions haven't timed out
+     *
+     * ## Configuration
+     *
+     * Add to etc/config.ini:
+     * ```ini
+     * [session]
+     * session.handler = database
+     * ```
      *
      * ## Usage
      *
@@ -80,12 +97,26 @@ class SessionManager {
      * SessionManager::start();
      * ```
      *
+     * Heads-up: Database session storage requires the phlag_sessions
+     * table to exist. Run schema migrations before enabling.
+     *
      * @return void
      */
     public static function start(): void {
 
         // Start session if not already started
         if (session_status() === PHP_SESSION_NONE) {
+
+            // Check if database session handler is configured
+            $config = \DealNews\GetConfig\GetConfig::init();
+            $handler = $config->get('session.handler') ?? 'files';
+
+            if ($handler === 'database') {
+                // Register database session handler
+                $db_handler = new DatabaseSessionHandler();
+                session_set_save_handler($db_handler, true);
+            }
+
             session_start();
         }
 

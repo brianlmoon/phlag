@@ -88,3 +88,12 @@ CREATE TABLE `phlag_password_reset_tokens` (
     KEY `expires_at` (`expires_at`),
     CONSTRAINT `fk_password_reset_user` FOREIGN KEY (`phlag_user_id`) REFERENCES `phlag_users` (`phlag_user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `phlag_sessions` (
+    `session_id` varchar(128) NOT NULL,
+    `session_data` mediumtext NOT NULL,
+    `last_activity` int unsigned NOT NULL,
+    `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`session_id`),
+    KEY `last_activity` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

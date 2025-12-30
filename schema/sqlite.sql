@@ -78,3 +78,12 @@ CREATE TABLE phlag_password_reset_tokens (
 
 CREATE INDEX idx_password_reset_user ON phlag_password_reset_tokens(phlag_user_id);
 CREATE INDEX idx_password_reset_expires ON phlag_password_reset_tokens(expires_at);
+
+CREATE TABLE phlag_sessions (
+    session_id TEXT PRIMARY KEY,
+    session_data TEXT NOT NULL,
+    last_activity INTEGER NOT NULL,
+    create_datetime TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_session_activity ON phlag_sessions(last_activity);

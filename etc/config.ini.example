@@ -44,8 +44,11 @@ mailer.smtp.password=your-smtp-password
 ; Session Configuration
 ; ---------------------
 
+; Session storage: 'database' or 'files' (default: files)
+session.handler = database
+
 ; Session timeout in seconds (default: 1800 = 30 minutes)
-session.timeout=1800
+session.timeout = 1800
 
 ; Application Configuration
 ; -------------------------

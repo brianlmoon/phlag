@@ -76,6 +76,7 @@ class Repository extends \DealNews\DataMapper\Repository {
      * - PhlagEnvironment: Maps to the phlag_environments table
      * - PhlagEnvironmentValue: Maps to the phlag_environment_values table
      * - PasswordResetToken: Maps to the phlag_password_reset_tokens table
+     * - PhlagSession: Maps to the phlag_sessions table
      *
      * @param array $mappers Optional additional mappers to register beyond
      *                       the default Phlag mappers. Format is the same
@@ -91,6 +92,7 @@ class Repository extends \DealNews\DataMapper\Repository {
             'PhlagEnvironment'         => new \Moonspot\Phlag\Mapper\PhlagEnvironment(),
             'PhlagEnvironmentValue'    => new \Moonspot\Phlag\Mapper\PhlagEnvironmentValue(),
             'PasswordResetToken'       => new \Moonspot\Phlag\Mapper\PasswordResetToken(),
+            'PhlagSession'             => new \Moonspot\Phlag\Mapper\PhlagSession(),
         ];
 
         $all_mappers = array_merge($default_mappers, $mappers);

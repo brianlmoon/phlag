@@ -84,6 +84,7 @@ Flag is **active** when:
 - **phlags**: `phlag_id`, name, type, value, start_datetime, end_datetime
 - **phlag_api_keys**: `plag_api_key_id`, description, api_key (64 chars)
 - **phlag_users**: `phlag_user_id`, username, full_name, password (bcrypt)
+- **phlag_sessions**: `session_id`, session_data, last_activity, create_datetime
 
 ### Naming Convention
 - Primary keys: `{table_name}_id`
@@ -95,11 +96,12 @@ Flag is **active** when:
 ✅ **API Keys**: Crypto-secure 64-char generation, one-time display, masking  
 ✅ **CSRF**: 256-bit tokens, timing-safe comparison, replay protection  
 ✅ **Sessions**: Regeneration on login, destruction on logout, 30-min timeout  
+✅ **Session Storage**: Database-backed sessions for multi-instance support  
 ✅ **XSS**: HTML escaping in templates and JS  
 
 ## Testing
 
-**Suite**: 104 tests, 100% pass rate
+**Suite**: 165 tests, 100% pass rate
 
 ```bash
 ./vendor/bin/phpunit                    # Run all tests
@@ -114,6 +116,29 @@ Flag is **active** when:
 - `GetFlagsTest.php` (14 tests) - Detailed flag endpoint
 - `CsrfTokenTest.php` (17 tests) - CSRF protection
 - `SessionManagerTest.php` (21 tests) - Session timeout and lifecycle
+- `DatabaseSessionHandlerTest.php` (16 tests) - Database session storage
+
+**Testing with Mocks**:
+Tests avoid database dependencies by using PHPUnit mocks:
+```php
+// Create mocked repository
+$repository = $this->createMock(Repository::class);
+
+// Configure expectations
+$repository->expects($this->once())
+    ->method('save')
+    ->with('PhlagSession', $this->isInstanceOf(PhlagSession::class))
+    ->willReturn($saved_session);
+
+// Inject via constructor
+$handler = new DatabaseSessionHandler($repository);
+```
+
+**Dependency Injection Pattern**:
+- Classes accept optional dependencies for testing
+- Defaults to production dependencies (singletons) when null
+- Example: `DatabaseSessionHandler(?Repository $repository = null)`
+- Enables 100% code coverage without database connections
 
 ## Coding Standards (Critical Rules)
 
@@ -196,8 +221,12 @@ public function example(int $foo, string $bar): ?ValueObj {
 7. **Public properties allowed** - When set externally (e.g., `GetPhlagState::$name`)
 8. **Footer spacing** - Use `footer.container` selector for specificity
 9. **Session timeout** - Default 30 minutes, configure via `SESSION_TIMEOUT` env var
-10. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
-11. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
+10. **Session storage** - Configure `session.handler = database` for multi-instance support
+11. **Repository API** - `save(string $type, object $value)`, `delete(string $name, $id)`, `get(string $name, $id)`, `find(string $name, array $filters)`
+12. **Non-auto-increment PKs** - Override save() method to skip lastInsertId() call (see PhlagSession mapper)
+13. **PostgreSQL compatibility** - lastInsertId() fails without sequences; use TEXT not bytea for session data
+14. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
+15. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
 
 ## File Locations
 
@@ -239,11 +268,12 @@ public function example(int $foo, string $bar): ?ValueObj {
 ✅ Custom flag endpoints (3)  
 ✅ Temporal constraints  
 ✅ Type-safe values  
-✅ Test suite (104 tests)  
+✅ Test suite (165 tests)  
 ✅ Comprehensive docs  
 ✅ BSD 3-Clause license  
 ✅ Session timeout (30-min inactivity)  
 ✅ Password reset flow (email integration)  
+✅ Database session storage (multi-instance support)  
 
 **Recommended Enhancements**:
 - Audit logging
@@ -274,6 +304,36 @@ curl -H "Authorization: Bearer <key>" http://localhost/all-flags
 # All flags with details
 curl -H "Authorization: Bearer <key>" http://localhost/get-flags
 ```
+
+### Configure Database Sessions
+For multi-instance deployments, enable database-backed session storage:
+
+1. **Add configuration** to `etc/config.ini`:
+```ini
+[session]
+session.handler = database
+session.timeout = 1800  # Optional: 30 minutes (default)
+```
+
+2. **Schema is auto-included** - The `phlag_sessions` table is already in all schema files
+
+3. **Verify it works**:
+```bash
+# Check phlag_sessions table has records after login
+mysql -u root -p phlag_db -e "SELECT session_id, last_activity FROM phlag_sessions;"
+```
+
+**Benefits**:
+- Share sessions across multiple web servers
+- No sticky sessions needed at load balancer
+- Sessions survive server restarts
+- Centralized session management
+
+**How it works**:
+- `SessionManager::start()` detects config and registers `DatabaseSessionHandler`
+- PHP's session system calls handler methods automatically
+- Garbage collection runs probabilistically (1% of requests by default)
+- Falls back to file-based sessions if database unavailable
 
 ### Debug Common Issues
 - **API 404**: Check trailing slash on `/api/*` endpoints
