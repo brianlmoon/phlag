@@ -6,6 +6,7 @@ use Moonspot\Phlag\Data\Repository;
 use Moonspot\Phlag\Data\PhlagUser;
 use Moonspot\Phlag\Data\PasswordResetToken;
 use Moonspot\Phlag\Web\Service\EmailService;
+use Moonspot\Phlag\Web\Service\GoogleOAuthService;
 
 /**
  * Authentication Controller
@@ -56,6 +57,13 @@ class AuthController extends BaseController {
     protected ?EmailService $email_service = null;
 
     /**
+     * Google OAuth service for OAuth authentication
+     *
+     * @var ?GoogleOAuthService
+     */
+    protected ?GoogleOAuthService $google_oauth_service = null;
+
+    /**
      * Creates the auth controller and initializes repository
      *
      * Extends the base controller constructor to also initialize
@@ -80,6 +88,9 @@ class AuthController extends BaseController {
             error_log("Email service unavailable: " . $e->getMessage());
             $this->email_service = null;
         }
+
+        // Initialize Google OAuth service
+        $this->google_oauth_service = new GoogleOAuthService();
     }
 
     /**
@@ -115,11 +126,16 @@ class AuthController extends BaseController {
             $timeout_message = 'Your session has expired due to inactivity. Please log in again.';
         }
 
+        // Check if Google OAuth is enabled
+        $google_oauth_enabled = $this->google_oauth_service !== null &&
+                                $this->google_oauth_service->isEnabled();
+
         // Show login form
         $this->render('auth/login.html.twig', [
-            'title'           => 'Login',
-            'error'           => $_SESSION['login_error'] ?? null,
-            'timeout_message' => $timeout_message,
+            'title'                => 'Login',
+            'error'                => $_SESSION['login_error'] ?? null,
+            'timeout_message'      => $timeout_message,
+            'google_oauth_enabled' => $google_oauth_enabled,
         ]);
 
         // Clear any error message from session
@@ -714,5 +730,230 @@ class AuthController extends BaseController {
             $old_token->used = true;
             $this->repository->save('PasswordResetToken', $old_token);
         }
+    }
+
+    /**
+     * Initiates Google OAuth login flow
+     *
+     * Redirects the user to Google's OAuth consent screen. After the user
+     * authorizes, Google redirects back to the callback URL with an
+     * authorization code.
+     *
+     * ## Security Considerations
+     *
+     * - Stores OAuth state in session for CSRF protection
+     * - State must be validated in callback handler
+     *
+     * ## Edge Cases
+     *
+     * - If OAuth is not enabled, redirects to login with error
+     * - If already logged in, redirects to dashboard
+     *
+     * @return void
+     */
+    public function googleLogin(): void {
+
+        // Already logged in? Redirect to dashboard
+        if ($this->isLoggedIn()) {
+            $this->redirect('/');
+        }
+
+        // Check if Google OAuth is enabled
+        if (
+            $this->google_oauth_service === null ||
+            !$this->google_oauth_service->isEnabled()
+        ) {
+            $_SESSION['login_error'] = 'Google OAuth is not configured';
+            $this->redirect('/login');
+        }
+
+        // Generate authorization URL and redirect
+        $callback_url = $this->base_url . '/auth/google/callback';
+        $auth_url     = $this->google_oauth_service->getAuthorizationUrl($callback_url);
+
+        // Store state in session for CSRF validation
+        $_SESSION['oauth_state'] = $this->google_oauth_service->getState();
+
+        header('Location: ' . $auth_url);
+        exit;
+    }
+
+    /**
+     * Handles Google OAuth callback
+     *
+     * Processes the OAuth callback from Google after user authorization.
+     * Validates the state parameter, exchanges the code for a token,
+     * retrieves user info, and either logs in an existing user or
+     * creates a new one.
+     *
+     * ## Security Considerations
+     *
+     * - Validates state parameter to prevent CSRF attacks
+     * - Checks email domain against allowed domains
+     * - Auto-links Google account to existing users by email
+     *
+     * ## User Linking Strategy
+     *
+     * 1. If google_id matches existing user → log in that user
+     * 2. If email matches existing user → auto-link Google and log in
+     * 3. Otherwise → create new user and log in
+     *
+     * @return void
+     */
+    public function googleCallback(): void {
+
+        // Already logged in? Redirect to dashboard
+        if ($this->isLoggedIn()) {
+            $this->redirect('/');
+        }
+
+        // Check if Google OAuth is enabled
+        if (
+            $this->google_oauth_service === null ||
+            !$this->google_oauth_service->isEnabled()
+        ) {
+            $this->renderOAuthError('Google OAuth is not configured');
+            return;
+        }
+
+        // Validate state parameter
+        $state = $_GET['state'] ?? '';
+        if (empty($state) || $state !== ($_SESSION['oauth_state'] ?? '')) {
+            $this->renderOAuthError('Invalid OAuth state. Please try again.');
+            return;
+        }
+
+        // Clear state from session
+        unset($_SESSION['oauth_state']);
+
+        // Check for error from Google
+        if (!empty($_GET['error'])) {
+            $error_msg = $_GET['error_description'] ?? $_GET['error'];
+            $this->renderOAuthError('Google authentication failed: ' . $error_msg);
+            return;
+        }
+
+        // Get authorization code
+        $code = $_GET['code'] ?? '';
+        if (empty($code)) {
+            $this->renderOAuthError('No authorization code received from Google');
+            return;
+        }
+
+        // Exchange code for access token
+        $callback_url = $this->base_url . '/auth/google/callback';
+        $token        = $this->google_oauth_service->getAccessToken($code, $callback_url);
+
+        if ($token === null) {
+            $this->renderOAuthError(
+                'Failed to get access token: ' . $this->google_oauth_service->getError()
+            );
+            return;
+        }
+
+        // Get Google user profile
+        $google_user = $this->google_oauth_service->getGoogleUser($token, $callback_url);
+
+        if ($google_user === null) {
+            $this->renderOAuthError(
+                'Failed to get user profile: ' . $this->google_oauth_service->getError()
+            );
+            return;
+        }
+
+        // Validate email domain
+        if (!$this->google_oauth_service->isAllowedDomain($google_user->email)) {
+            $this->renderOAuthError(
+                'Your email domain is not allowed. ' .
+                'Please contact your administrator.'
+            );
+            return;
+        }
+
+        // Try to find or create user
+        $user = $this->findOrCreateGoogleUser($google_user);
+
+        if ($user === null) {
+            $this->renderOAuthError('Failed to create or link user account');
+            return;
+        }
+
+        // Log in the user
+        $this->loginUser($user->phlag_user_id, $user->username);
+        $this->redirect('/');
+    }
+
+    /**
+     * Finds an existing user or creates a new one for Google OAuth
+     *
+     * Implements the user linking strategy:
+     * 1. Find by google_id → existing OAuth-linked user
+     * 2. Find by email → link Google account to existing user
+     * 3. Create new user → new OAuth-only account
+     *
+     * ## Edge Cases
+     *
+     * - Updates google_id on existing user if linking by email
+     * - Generates random password for new OAuth-only users
+     * - Uses email as username if creating new user
+     *
+     * @param \Moonspot\Phlag\Data\GoogleUser $google_user Google profile data
+     *
+     * @return ?PhlagUser Found or created user, or null on failure
+     */
+    protected function findOrCreateGoogleUser(
+        \Moonspot\Phlag\Data\GoogleUser $google_user
+    ): ?PhlagUser {
+
+        $user = null;
+
+        // First, try to find by google_id
+        $users = $this->repository->find('PhlagUser', ['google_id' => $google_user->google_id]);
+        if (!empty($users)) {
+            $user = reset($users);
+            return $user;
+        }
+
+        // Second, try to find by email
+        $users = $this->repository->find('PhlagUser', ['email' => $google_user->email]);
+        if (!empty($users)) {
+            $user = reset($users);
+
+            // Link Google account to existing user
+            $user->google_id = $google_user->google_id;
+            $saved_user = $this->repository->save('PhlagUser', $user);
+
+            return $saved_user;
+        }
+
+        // Third, create a new user
+        $user            = $this->repository->new('PhlagUser');
+        $user->username  = $google_user->email;
+        $user->email     = $google_user->email;
+        $user->full_name = !empty($google_user->name) ? $google_user->name : $google_user->email;
+        $user->password  = $this->google_oauth_service->generateRandomPassword();
+        $user->google_id = $google_user->google_id;
+
+        $saved_user = $this->repository->save('PhlagUser', $user);
+
+        return $saved_user;
+    }
+
+    /**
+     * Renders an OAuth error page
+     *
+     * Displays a user-friendly error page for OAuth failures with
+     * a link to return to the login page.
+     *
+     * @param string $message Error message to display
+     *
+     * @return void
+     */
+    protected function renderOAuthError(string $message): void {
+
+        $this->render('auth/oauth_error.html.twig', [
+            'title'   => 'Authentication Error',
+            'message' => $message,
+        ]);
     }
 }

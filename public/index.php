@@ -256,6 +256,18 @@ try {
             'action'  => 'reset_password',
         ],
 
+        // Google OAuth routes
+        [
+            'type'    => 'exact',
+            'pattern' => '/auth/google',
+            'action'  => 'google_login',
+        ],
+        [
+            'type'    => 'exact',
+            'pattern' => '/auth/google/callback',
+            'action'  => 'google_callback',
+        ],
+
         // Dashboard (protected)
         [
             'type'    => 'exact',
@@ -683,6 +695,16 @@ try {
                     $controller = new \Moonspot\Phlag\Web\Controller\AuthController();
                     $controller->resetPassword();
                 }
+                break;
+
+            case 'google_login':
+                $controller = new \Moonspot\Phlag\Web\Controller\AuthController();
+                $controller->googleLogin();
+                break;
+
+            case 'google_callback':
+                $controller = new \Moonspot\Phlag\Web\Controller\AuthController();
+                $controller->googleCallback();
                 break;
 
             /**

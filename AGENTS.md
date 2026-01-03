@@ -11,7 +11,7 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 ## Key Architecture
 
 ### Data Layer
-- **Value Objects**: `Phlag`, `PhlagApiKey`, `PhlagUser` (in `src/Data/`)
+- **Value Objects**: `Phlag`, `PhlagApiKey`, `PhlagUser`, `GoogleUser` (in `src/Data/`)
 - **Mappers**: Auto-generate API keys (64-char), hash passwords (bcrypt)
 - **Repository**: Singleton with `init()`, auto-registers mappers
 
@@ -39,6 +39,13 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 - **Method**: `Authorization: Bearer <api_key>` header
 - **Protected**: Flag state retrieval only
 - **Trait**: `ApiKeyAuthTrait` handles validation
+
+### Google OAuth (Optional)
+- **Endpoints**: `/auth/google`, `/auth/google/callback`
+- **Service**: `GoogleOAuthService` wraps league/oauth2-google
+- **Config**: `etc/config.ini` with `google_oauth.*` settings
+- **Behavior**: Auto-creates users, auto-links by email match
+- **Domain restriction**: Optional comma-separated allowed domains
 
 ### First-Time Setup
 1. Empty `phlag_users` table triggers redirect to `/first-user`
@@ -83,7 +90,7 @@ Flag is **active** when:
 ### Tables (all prefixed `phlag_`)
 - **phlags**: `phlag_id`, name, type, value, start_datetime, end_datetime
 - **phlag_api_keys**: `plag_api_key_id`, description, api_key (64 chars)
-- **phlag_users**: `phlag_user_id`, username, full_name, password (bcrypt)
+- **phlag_users**: `phlag_user_id`, username, full_name, password (bcrypt), google_id
 - **phlag_sessions**: `session_id`, session_data, last_activity, create_datetime
 
 ### Naming Convention
@@ -98,10 +105,11 @@ Flag is **active** when:
 ✅ **Sessions**: Regeneration on login, destruction on logout, 30-min timeout  
 ✅ **Session Storage**: Database-backed sessions for multi-instance support  
 ✅ **XSS**: HTML escaping in templates and JS  
+✅ **Google OAuth**: Optional SSO with domain restrictions  
 
 ## Testing
 
-**Suite**: 165 tests, 100% pass rate
+**Suite**: 189 tests, 100% pass rate
 
 ```bash
 ./vendor/bin/phpunit                    # Run all tests
@@ -117,6 +125,7 @@ Flag is **active** when:
 - `CsrfTokenTest.php` (17 tests) - CSRF protection
 - `SessionManagerTest.php` (21 tests) - Session timeout and lifecycle
 - `DatabaseSessionHandlerTest.php` (16 tests) - Database session storage
+- `GoogleOAuthServiceTest.php` (24 tests) - Google OAuth service
 
 **Testing with Mocks**:
 Tests avoid database dependencies by using PHPUnit mocks:
@@ -230,6 +239,9 @@ public function example(int $foo, string $bar): ?ValueObj {
 14. **Data-mapper-api search bug** - Use GET with client-side filtering instead of POST _search endpoint for reliability
 15. **Email configuration** - Set `mailer.from.address` config value; falls back to on-screen tokens if not configured
 16. **Base URL path** - Set `phlag.base_url_path` config value for subdirectory installs (e.g., `/phlag`); used in API link generation
+17. **INI boolean parsing** - PHP's `parse_ini_file()` converts `true` to `"1"`, not `"true"`; check for both values
+18. **Google OAuth config** - Set `google_oauth.enabled`, `google_oauth.client_id`, `google_oauth.client_secret`, `google_oauth.redirect_uri`
+19. **OAuth user linking** - Links by `google_id` first, then by email match; generates random password for OAuth-only accounts
 
 ## File Locations
 
@@ -260,7 +272,7 @@ public function example(int $foo, string $bar): ?ValueObj {
 
 ## Current Status
 
-**Version**: 1.4.0 (Production Ready)
+**Version**: 1.5.0 (Production Ready)
 
 **Complete**:
 ✅ Core phlag management (CRUD)  
@@ -271,12 +283,13 @@ public function example(int $foo, string $bar): ?ValueObj {
 ✅ Custom flag endpoints (3)  
 ✅ Temporal constraints  
 ✅ Type-safe values  
-✅ Test suite (165 tests)  
+✅ Test suite (189 tests)  
 ✅ Comprehensive docs  
 ✅ BSD 3-Clause license  
 ✅ Session timeout (30-min inactivity)  
 ✅ Password reset flow (email integration)  
 ✅ Database session storage (multi-instance support)  
+✅ Google OAuth authentication (optional SSO)  
 
 **Recommended Enhancements**:
 - Audit logging
@@ -338,12 +351,49 @@ mysql -u root -p phlag_db -e "SELECT session_id, last_activity FROM phlag_sessio
 - Garbage collection runs probabilistically (1% of requests by default)
 - Falls back to file-based sessions if database unavailable
 
+### Configure Google OAuth
+Optional single sign-on with Google accounts:
+
+1. **Create OAuth credentials** in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+
+2. **Add configuration** to `etc/config.ini`:
+```ini
+[google_oauth]
+google_oauth.enabled = true
+google_oauth.client_id = your-client-id.apps.googleusercontent.com
+google_oauth.client_secret = your-client-secret
+google_oauth.allowed_domains = example.com,company.org  ; Optional
+```
+
+3. **Run database migration** (existing databases only):
+```sql
+-- MySQL
+ALTER TABLE phlag_users ADD COLUMN google_id varchar(255) DEFAULT NULL;
+ALTER TABLE phlag_users ADD UNIQUE KEY google_id (google_id);
+
+-- PostgreSQL
+ALTER TABLE phlag_users ADD COLUMN google_id VARCHAR(255) DEFAULT NULL;
+CREATE UNIQUE INDEX phlag_users_google_id_key ON phlag_users(google_id);
+
+-- SQLite
+ALTER TABLE phlag_users ADD COLUMN google_id TEXT DEFAULT NULL;
+CREATE UNIQUE INDEX phlag_users_google_id ON phlag_users(google_id);
+```
+
+**Behavior**:
+- Shows "Sign in with Google" button on login page
+- Auto-creates new users from Google profile
+- Auto-links existing users by email match
+- Generates random password for OAuth-only accounts
+- Supports optional domain restriction
+
 ### Debug Common Issues
 - **API 404**: Check trailing slash on `/api/*` endpoints
 - **401 Unauthorized**: Verify session cookie or Bearer token
 - **Wrong type returned**: Check flag type and temporal constraints
 - **Modal won't close**: Check CSS `.modal.hidden` specificity
 - **Footer spacing**: Ensure `footer.container` selector used
+- **Google button not showing**: Check `google_oauth.enabled = true` in config (INI parses `true` as `"1"`)
 
 ## License
 BSD 3-Clause (Brian Moon, 2025)

@@ -1,0 +1,24 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Authentication Error</h2>
+        
+        <div class="alert alert-error">
+            <strong>Unable to sign in with Google</strong>
+            <p>{{ message }}</p>
+        </div>
+
+        <div class="oauth-error-actions">
+            <a href="{{ base_url }}/login" class="btn btn-primary">Return to Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# No JavaScript needed for error page #}
+{% endblock %}

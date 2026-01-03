@@ -73,6 +73,22 @@ class PhlagUser extends \Moonspot\ValueObjects\ValueObject {
     public string $password = '';
 
     /**
+     * Google OAuth unique identifier
+     *
+     * Stores Google's unique user ID for OAuth-linked accounts. This allows
+     * users to log in with Google without needing a password. Nullable because
+     * not all users will have linked their Google account.
+     *
+     * Edge Cases:
+     * - NULL for users who have never authenticated via Google
+     * - Must be unique across all users to prevent duplicate linking
+     * - Once set, cannot be changed (immutable linking)
+     *
+     * @var ?string
+     */
+    public ?string $google_id = null;
+
+    /**
      * Timestamp when the user record was created
      *
      * @var string

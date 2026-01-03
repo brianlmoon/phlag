@@ -24,6 +24,7 @@ CREATE TABLE phlag_users (
     full_name varchar(255) NOT NULL,
     email varchar(255) NOT NULL UNIQUE,
     password varchar(255) NOT NULL,
+    google_id varchar(255) DEFAULT NULL UNIQUE,
     create_datetime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_datetime timestamp DEFAULT NULL
 );

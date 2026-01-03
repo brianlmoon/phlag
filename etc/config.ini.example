@@ -90,3 +90,27 @@ session.timeout = 1800
 ; mailer.smtp.username=your-mailtrap-username
 ; mailer.smtp.password=your-mailtrap-password
 
+; Google OAuth Configuration
+; --------------------------
+; Enable Google OAuth for authentication (default: disabled)
+; When enabled, users can log in with their Google accounts.
+
+; Enable Google OAuth (set to "true" to enable)
+; google_oauth.enabled=true
+
+; Google OAuth credentials (from Google Cloud Console)
+; To obtain these:
+; 1. Go to https://console.cloud.google.com/
+; 2. Create a new project (or select existing)
+; 3. Enable "Google+ API" or "People API"
+; 4. Go to Credentials → Create Credentials → OAuth 2.0 Client ID
+; 5. Set authorized redirect URI: https://your-domain.com/auth/google/callback
+; 6. Copy Client ID and Client Secret here
+; google_oauth.client_id=your-client-id.apps.googleusercontent.com
+; google_oauth.client_secret=your-client-secret
+
+; Allowed email domains (comma-separated, leave empty for any domain)
+; Example: example.com,company.org
+; If empty or not set, any Google account can authenticate
+; google_oauth.allowed_domains=
+
