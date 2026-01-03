@@ -288,8 +288,6 @@ class GoogleOAuthService {
      */
     public function isAllowedDomain(string $email): bool {
 
-        $allowed = true;
-
         $allowed_domains_config = $this->config->get('google_oauth.allowed_domains');
 
         // If no domains configured, allow all
