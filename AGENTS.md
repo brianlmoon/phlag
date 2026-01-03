@@ -362,7 +362,6 @@ Optional single sign-on with Google accounts:
 google_oauth.enabled = true
 google_oauth.client_id = your-client-id.apps.googleusercontent.com
 google_oauth.client_secret = your-client-secret
-google_oauth.redirect_uri = https://your-domain.com/auth/google/callback
 google_oauth.allowed_domains = example.com,company.org  ; Optional
 ```
 
