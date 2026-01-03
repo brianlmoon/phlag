@@ -357,10 +357,11 @@ class GoogleOAuthService {
     }
 
     /**
-     * Gets or creates the Google OAuth provider instance
+     * Gets a configured Google OAuth provider instance
      *
-     * Lazily initializes the Google provider with credentials from config.
-     * The provider is cached for reuse within the same request.
+     * Initializes a new Google provider with credentials from config and
+     * the provided callback URL. A fresh provider instance is created on
+     * each call to ensure the redirect URI matches the current context.
      *
      * @param string $callback_url The OAuth callback URL
      *
