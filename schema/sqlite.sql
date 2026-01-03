@@ -22,6 +22,7 @@ CREATE TABLE phlag_users (
     full_name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    google_id TEXT DEFAULT NULL UNIQUE,
     create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
     update_datetime TEXT DEFAULT NULL
 );

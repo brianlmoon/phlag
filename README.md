@@ -12,6 +12,7 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 - 🌐 **Web Interface**: Clean admin UI for managing flags, API keys, and users
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
 - 📧 **Password Reset**: Email-based password recovery
+- 🔐 **Google OAuth**: Optional Google sign-in for user authentication
 - 🗄️ **Multi-Database**: MySQL, PostgreSQL, SQLite support
 - 📦 **Client Libraries**: Official JavaScript and PHP clients available
 
@@ -93,7 +94,44 @@ mailer.smtp.password = your-smtp-password
 
 See `etc/config.ini.example` for detailed email configuration options including Gmail, SendGrid, and Mailgun examples.
 
-5. **Start the application**
+5. **Configure Google OAuth (optional)**
+
+Add to `etc/config.ini`:
+
+```ini
+[google_oauth]
+google_oauth.enabled = true
+google_oauth.client_id = your-client-id.apps.googleusercontent.com
+google_oauth.client_secret = your-client-secret
+google_oauth.allowed_domains = example.com,company.org
+```
+
+**To obtain Google OAuth credentials:**
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select existing)
+3. Navigate to "APIs & Services" → "Credentials"
+4. Click "Create Credentials" → "OAuth 2.0 Client ID"
+5. Set application type to "Web application"
+6. Add authorized redirect URI: `https://your-domain.com/auth/google/callback`
+7. Copy the Client ID and Client Secret to your config
+
+**Configuration options:**
+
+| Setting | Required | Description |
+|---------|----------|-------------|
+| `google_oauth.enabled` | Yes | Set to `true` to enable Google sign-in |
+| `google_oauth.client_id` | Yes | OAuth client ID from Google Cloud Console |
+| `google_oauth.client_secret` | Yes | OAuth client secret from Google Cloud Console |
+| `google_oauth.allowed_domains` | No | Comma-separated list of allowed email domains. Leave empty to allow any Google account |
+
+**User behavior:**
+- Users can sign in with either password or Google (both methods work)
+- If a Google user's email matches an existing user, accounts are auto-linked
+- New Google users are auto-created with their email as username
+- The first user must still be created via the password-based `/first-user` flow
+
+6. **Start the application**
 
 For development, use PHP's built-in server:
 
@@ -103,11 +141,11 @@ php -S localhost:8000 -t public
 
 For production, configure your web server to serve `public/` as the document root.
 
-6. **Create your first user**
+7. **Create your first user**
 
 Navigate to `http://localhost:8000/first-user` and create an admin account. This page only appears when no users exist.
 
-7. **Start managing flags!**
+8. **Start managing flags!**
 
 Log in at `http://localhost:8000/login` and you're ready to create feature flags.
 
@@ -339,6 +377,7 @@ phlag/
 - **Password Security**: Bcrypt hashing with cost factor 12
 - **API Key Generation**: Cryptographically secure random_bytes()
 - **Session Security**: ID regeneration, timeout tracking, destruction on logout
+- **Google OAuth**: Secure OAuth 2.0 flow with state parameter CSRF protection
 - **XSS Prevention**: Twig auto-escaping, manual escaping in JavaScript
 - **Input Validation**: Type checking, pattern matching, length constraints
 
@@ -437,6 +476,7 @@ Built by Brian Moon (brian@moonspot.net)
 - [DealNews DataMapper](https://github.com/dealnews/data-mapper) - ORM
 - [Twig](https://twig.symfony.com/) - Templating
 - [PHPMailer](https://github.com/PHPMailer/PHPMailer) - Email
+- [league/oauth2-google](https://github.com/thephpleague/oauth2-google) - Google OAuth
 
 ## Support
 

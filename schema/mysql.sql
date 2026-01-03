@@ -27,11 +27,13 @@ CREATE TABLE `phlag_users` (
     `full_name` varchar(255) NOT NULL,
     `email` varchar(255) NOT NULL,
     `password` varchar(255) NOT NULL,
+    `google_id` varchar(255) DEFAULT NULL,
     `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_datetime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`phlag_user_id`),
     UNIQUE KEY `username` (`username`),
-    UNIQUE KEY `email` (`email`)
+    UNIQUE KEY `email` (`email`),
+    UNIQUE KEY `google_id` (`google_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `phlag_environments` (
