@@ -576,16 +576,18 @@ If you're upgrading from a version before webhooks were added, run this migratio
 CREATE TABLE IF NOT EXISTS phlag_webhooks (
     phlag_webhook_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
-    url VARCHAR(1024) NOT NULL,
+    url VARCHAR(2048) NOT NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
-    headers_json TEXT DEFAULT NULL,
-    payload_template TEXT NOT NULL,
+    headers_json TEXT,
+    payload_template TEXT,
     event_types_json TEXT NOT NULL,
     include_environment_changes TINYINT(1) NOT NULL DEFAULT 0,
+    create_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_datetime DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (phlag_webhook_id),
     KEY name (name),
     KEY is_active (is_active)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
 
 **PostgreSQL:**
