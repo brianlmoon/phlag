@@ -88,3 +88,19 @@ CREATE TABLE phlag_sessions (
 );
 
 CREATE INDEX idx_session_activity ON phlag_sessions(last_activity);
+
+CREATE TABLE phlag_webhooks (
+    phlag_webhook_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    headers_json TEXT,
+    payload_template TEXT,
+    event_types_json TEXT NOT NULL,
+    include_environment_changes INTEGER NOT NULL DEFAULT 0,
+    create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+    update_datetime TEXT
+);
+
+CREATE INDEX idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX idx_webhook_active ON phlag_webhooks(is_active);

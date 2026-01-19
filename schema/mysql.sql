@@ -99,3 +99,19 @@ CREATE TABLE `phlag_sessions` (
     PRIMARY KEY (`session_id`),
     KEY `last_activity` (`last_activity`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `phlag_webhooks` (
+    `phlag_webhook_id` int unsigned NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `url` varchar(2048) NOT NULL,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `headers_json` text,
+    `payload_template` text,
+    `event_types_json` text NOT NULL,
+    `include_environment_changes` tinyint(1) NOT NULL DEFAULT 0,
+    `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_datetime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`phlag_webhook_id`),
+    KEY `name` (`name`),
+    KEY `is_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

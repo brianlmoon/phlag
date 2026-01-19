@@ -1,0 +1,86 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="webhook-list">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+        <div class="page-actions">
+            <a href="{{ base_url }}/webhooks/create" class="btn btn-primary">Create New Webhook</a>
+        </div>
+    </div>
+
+    <div id="loading" class="text-center" style="padding: 3rem;">
+        <p>Loading webhooks...</p>
+    </div>
+
+    <div id="webhook-table-container" class="hidden">
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="webhook-search" placeholder="Search webhooks by name or URL..." autocomplete="off">
+                <button id="search-clear" class="search-clear-btn hidden" title="Clear search">&times;</button>
+            </div>
+            <div id="results-counter" class="results-counter hidden">
+                Showing <span id="visible-count">0</span> of <span id="total-count">0</span> webhooks
+            </div>
+        </div>
+        
+        <div id="no-results-message" class="no-results-message hidden">
+            <p>No webhooks match your search.</p>
+        </div>
+        <table id="webhook-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="hide-mobile">URL</th>
+                    <th class="hide-mobile">Events</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="webhook-tbody">
+                {# Populated by JavaScript #}
+            </tbody>
+        </table>
+
+        <div id="empty-state" class="hidden text-center" style="padding: 3rem;">
+            <p>No webhooks found.</p>
+            <p><a href="{{ base_url }}/webhooks/create" class="btn btn-primary">Create your first webhook</a></p>
+        </div>
+    </div>
+</div>
+
+{# Test webhook modal #}
+<div id="test-webhook-modal" class="modal hidden">
+    <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <h2>Test Webhook</h2>
+        <div class="form-group">
+            <label for="test-flag-select">Select Flag for Test:</label>
+            <select id="test-flag-select" class="form-control" required>
+                <option value="">-- Choose a flag --</option>
+            </select>
+            <small class="form-text text-muted">
+                Test payload will use this flag's real data and environments
+            </small>
+        </div>
+        <div id="test-webhook-result"></div>
+        <div class="modal-actions">
+            <button id="send-test-btn" class="btn btn-primary" disabled>Send Test</button>
+            <button id="close-test-modal-btn" class="btn">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/webhook.js"></script>
+<script>
+    // Initialize and load webhook list when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        WebhookManager.init('{{ api_url }}');
+        WebhookManager.loadList();
+    });
+</script>
+{% endblock %}
