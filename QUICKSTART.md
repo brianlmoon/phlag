@@ -34,7 +34,26 @@ You'll need an API key to query flag values from your applications.
 3. Enter a description (e.g., "Production App Key")
 4. **Copy the generated key immediately** - it's only shown once!
 
-### 4. Create Your First Flag
+### 4. (Optional) Configure Webhooks
+
+If you want to be notified when flags change, set up webhooks to send HTTP POST requests to your endpoints.
+
+1. Navigate to `/webhooks`
+2. Click "Create New Webhook"
+3. Configure:
+   - **Name:** "Slack Notifications"
+   - **URL:** Your HTTPS endpoint (e.g., Slack incoming webhook URL)
+   - **Status:** Active
+   - **Event Types:** Check `created` and `updated`
+   - **Include environment changes:** Check if you want notifications on environment value updates
+   - **Custom Headers:** Add any required authentication headers
+   - **Payload Template:** Customize the JSON payload (default provided)
+4. Click "Test" to verify webhook delivery
+5. Click "Create Webhook"
+
+Webhooks will now fire automatically whenever flags change!
+
+### 5. Create Your First Flag
 
 1. Navigate to `/flags`
 2. Click "Create New Flag"
@@ -138,6 +157,24 @@ $response = file_get_contents(
 
 $max_requests = json_decode($response); // Returns: 100 (integer)
 ```
+
+### Webhook Notifications
+
+Get notified when flags change by sending HTTP POST requests to your endpoints:
+
+1. **Create webhook** at `/webhooks`
+2. **Configure URL** (e.g., Slack incoming webhook, custom API endpoint)
+3. **Select event types** (flag created, updated, environment changes)
+4. **Customize payload** using Twig template syntax
+5. **Test delivery** with one-click test button
+
+Example use cases:
+- Send Slack/Discord notifications to your team
+- Trigger CI/CD pipelines when flags change
+- Update external monitoring dashboards
+- Sync flag changes to analytics platforms
+
+The default payload includes flag name, type, description, all environment values, and timestamp.
 
 ## Troubleshooting
 

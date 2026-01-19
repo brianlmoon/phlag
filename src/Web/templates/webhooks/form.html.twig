@@ -1,0 +1,122 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ title }} - Phlag Admin{% endblock %}
+
+{% block content %}
+<div class="webhook-form">
+    <div class="page-header">
+        <h1>{{ title }}</h1>
+    </div>
+
+    <form id="webhook-form" data-mode="{{ mode }}" {% if mode == 'edit' %}data-webhook-id="{{ webhook_id }}"{% endif %}>
+
+        <h2>Webhook Configuration</h2>
+
+        <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" required maxlength="255"
+                   placeholder="e.g., Slack Notification">
+            <span class="help-text">Friendly name to identify this webhook (max 255 characters).</span>
+        </div>
+
+        <div class="form-group">
+            <label for="url">Webhook URL *</label>
+            <input type="url" id="url" name="url" required maxlength="1024"
+                   placeholder="https://example.com/webhook">
+            <span class="help-text">HTTPS URL to send webhook POST requests to (localhost allowed for testing).</span>
+        </div>
+
+        <div class="form-group">
+            <label for="is_active">Status</label>
+            <select id="is_active" name="is_active" required>
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+            </select>
+            <span class="help-text">Inactive webhooks will not fire. Use this to temporarily disable a webhook.</span>
+        </div>
+
+        <h2>Event Types</h2>
+        <div class="form-group">
+            <p class="section-description">
+                Select which events should trigger this webhook. At least one event type is required.
+            </p>
+
+            <div class="form-group checkbox-group">
+                <label>
+                    <input type="checkbox" name="event_types[]" value="created" checked>
+                    Flag Created
+                </label>
+                <label>
+                    <input type="checkbox" name="event_types[]" value="updated" checked>
+                    Flag Updated
+                </label>
+                <label>
+                    <input type="checkbox" id="include_environment_changes" name="include_environment_changes" value="1">
+                    Include environment value changes
+                    <span class="help-text">When checked, webhook fires when environment values change (in addition to flag create/update).</span>
+                </label>
+            </div>
+        </div>
+
+        <h2>Custom Headers</h2>
+
+        <div class="form-group">
+            <p class="section-description">
+                Optional: Add custom HTTP headers to the webhook request. Common uses include
+                authentication tokens or API keys.
+            </p>
+
+            <div id="headers-container">
+                <div class="header-row">
+                    <input type="text" name="header_name[]" placeholder="Header Name" class="header-name">
+                    <input type="text" name="header_value[]" placeholder="Header Value" class="header-value">
+                    <button type="button" class="btn-remove-header" title="Remove header">Remove</button>
+                </div>
+            </div>
+
+            <button type="button" id="add-header-btn" class="btn btn-secondary">Add Header</button>
+        </div>
+
+        <h2>Payload Template</h2>
+        <p class="section-description">
+            Customize the JSON payload sent to the webhook using Twig syntax. The following
+            variables are available: <code>event_type</code>, <code>flag</code> (with name, type, and
+            description), <code>environments</code> array, <code>previous</code> (on updates), <code>timestamp</code>.
+        </p>
+
+        <div class="form-group">
+            <label for="payload_template">JSON Template *</label>
+            <textarea id="payload_template" name="payload_template" rows="20" required
+                      class="code-textarea"></textarea>
+            <span class="help-text">Twig template for the JSON payload. Syntax errors will be shown on save.</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create Webhook{% else %}Update Webhook{% endif %}
+            </button>
+            <a href="{{ base_url }}/webhooks" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ base_url }}/assets/js/webhook.js"></script>
+<script>
+    // Initialize webhook manager
+    document.addEventListener('DOMContentLoaded', function() {
+        WebhookManager.init('{{ api_url }}');
+
+        const form = document.getElementById('webhook-form');
+        const mode = form.dataset.mode;
+
+        if (mode === 'edit') {
+            const webhook_id = form.dataset.webhookId;
+            WebhookManager.loadForEdit(webhook_id);
+        }
+
+        WebhookManager.initForm();
+    });
+</script>
+{% endblock %}

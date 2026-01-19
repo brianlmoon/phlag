@@ -371,6 +371,31 @@ try {
             'tokens'  => ['id'],
         ],
 
+        // Webhook routes
+        [
+            'type'    => 'exact',
+            'pattern' => '/webhooks',
+            'action'  => 'webhook_list',
+        ],
+        [
+            'type'    => 'exact',
+            'pattern' => '/webhooks/create',
+            'action'  => 'webhook_create',
+        ],
+        [
+            'type'    => 'regex',
+            'pattern' => '!^/webhooks/(\d+)/edit$!',
+            'action'  => 'webhook_edit',
+            'tokens'  => ['id'],
+        ],
+
+        // Webhook test endpoint (special API action)
+        [
+            'type'    => 'exact',
+            'pattern' => '/api/PhlagWebhook/test/',
+            'action'  => 'webhook_test',
+        ],
+
         // Flag state endpoints (v2.0 - environment required)
         // All flags endpoint (must come before single flag endpoint)
         [
@@ -806,6 +831,28 @@ try {
                 $controller = new \Moonspot\Phlag\Web\Controller\PhlagEnvironmentController();
                 $environment_id = (int)($route['tokens']['id'] ?? 0);
                 $controller->view($environment_id);
+                break;
+
+            case 'webhook_list':
+                $controller = new \Moonspot\Phlag\Web\Controller\PhlagWebhookController();
+                $controller->list();
+                break;
+
+            case 'webhook_create':
+                $controller = new \Moonspot\Phlag\Web\Controller\PhlagWebhookController();
+                $controller->create();
+                break;
+
+            case 'webhook_edit':
+                $controller = new \Moonspot\Phlag\Web\Controller\PhlagWebhookController();
+                $webhook_id = (int)($route['tokens']['id'] ?? 0);
+                $controller->edit($webhook_id);
+                break;
+
+            case 'webhook_test':
+                header('Content-Type: application/json');
+                $action = new \Moonspot\Phlag\Action\PhlagWebhook\Test();
+                $action->run();
                 break;
 
             /**

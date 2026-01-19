@@ -11,6 +11,7 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 - ⏰ **Temporal Control**: Schedule flags with start/end dates
 - 🌐 **Web Interface**: Clean admin UI for managing flags, API keys, and users
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
+- 🪝 **Webhooks**: HTTP notifications when flags change with customizable payloads
 - 📧 **Password Reset**: Email-based password recovery
 - 🔐 **Google OAuth**: Optional Google sign-in for user authentication
 - 🗄️ **Multi-Database**: MySQL, PostgreSQL, SQLite support
@@ -264,6 +265,169 @@ For other languages or custom integrations, use the Flag API endpoints directly 
 3. **Add users**: Navigate to "Users" → "Create New User"
    - Provide username, full name, email, password
 
+### Configuring Webhooks
+
+Webhooks notify external systems when flags change by sending HTTP POST requests with customizable payloads.
+
+#### Creating a Webhook
+
+1. Navigate to "Webhooks" → "Create New Webhook"
+2. Configure the webhook:
+   - **Name**: Friendly identifier (e.g., "Slack Notifications")
+   - **URL**: HTTPS endpoint to receive POST requests
+   - **Status**: Active/Inactive toggle
+   - **Event Types**: Select which events trigger the webhook:
+     - `created` - New flag created
+     - `updated` - Existing flag updated
+   - **Include environment changes**: Check to fire on environment value changes
+   - **Custom Headers**: Optional HTTP headers (e.g., `Authorization: Bearer token`)
+   - **Payload Template**: Twig template for JSON payload (default provided)
+
+3. Test the webhook before activating:
+   - Click "Test" button
+   - Select a flag from the dropdown (uses real flag data and environments)
+   - Click "Send Test" to deliver a test payload
+   - Verify HTTP status code and response
+4. Activate the webhook to start receiving notifications
+
+**Test Behavior:**
+- Simulates an `updated` event
+- Uses selected flag's current data, including all environments
+- Validates Twig template renders correctly
+- Sends actual HTTP POST request to configured URL
+
+#### Webhook Payload
+
+The default payload includes:
+
+```json
+{
+  "event": "updated",
+  "flag": {
+    "name": "feature_checkout",
+    "type": "SWITCH",
+    "description": "New checkout flow",
+    "environments": [
+      {
+        "name": "production",
+        "value": true,
+        "start_datetime": null,
+        "end_datetime": null
+      }
+    ]
+  },
+  "previous": {
+    "name": "feature_checkout",
+    "type": "SWITCH",
+    "description": "Old checkout flow"
+  },
+  "timestamp": "2026-01-18T18:00:00+00:00"
+}
+```
+
+#### Customizing Payloads
+
+Payload templates use Twig syntax with these variables:
+
+- `event_type` - Event name (e.g., "updated")
+- `flag` - Current flag object with `name`, `type`, `description`
+- `environments` - Array of environment values (separate from flag object)
+- `previous` - Previous flag state (on updates only)
+- `old_environments` - Previous environment values (on updates only)
+- `timestamp` - ISO 8601 timestamp
+
+**Important:** Use the `|raw` filter to prevent HTML escaping in JSON output:
+
+```twig
+"value": "{{ env.value|raw }}"
+```
+
+Example custom template for Slack:
+
+```twig
+{
+  "text": "Flag *{{ flag.name|raw }}* was {{ event_type == 'created' ? 'created' : 'updated' }}",
+  "blocks": [
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "Type: `{{ flag.type|raw }}`\nDescription: {{ flag.description|raw }}"
+      }
+    }
+  ]
+}
+```
+
+**Advanced Slack Example with Environments:**
+
+This example demonstrates environment iteration and Slack attachments format. Create an incoming webhook in your Slack workspace settings, then use this template:
+
+```twig
+{
+  "channel": "#deployments",
+  "username": "Phlag Bot",
+  "attachments": [
+    {
+      "fallback": "{{ flag.name|raw }} {{ event_type|raw }}",
+      "pretext": "{{ flag.name|raw }} {{ event_type|raw }}",
+      "fields": [
+        {
+          "title": "Flag",
+          "value": "{{ flag.name|raw }}",
+          "short": true
+        }
+      ]
+    }
+    {% for env in environments %},
+    {
+      "fallback": "{{ env.name|raw }} set to {{ env.value|raw }}",
+      "fields": [
+        {
+          "title": "Environment",
+          "value": "{{ env.name|raw }}",
+          "short": true
+        },
+        {
+          "title": "Value",
+          "value": {{ env.value|json_encode|raw }},
+          "short": true
+        },
+        {
+          "title": "Start",
+          "value": {{ env.start_datetime|json_encode|raw }},
+          "short": true
+        },
+        {
+          "title": "End",
+          "value": {{ env.end_datetime|json_encode|raw }},
+          "short": true
+        }
+      ]
+    }
+    {% endfor %}
+  ]
+}
+```
+
+#### Security Considerations
+
+- **HTTPS Required**: Webhooks must use HTTPS (except localhost for testing)
+- **Private IP Blocking**: Webhooks cannot target private IP ranges (10.*, 192.168.*, etc.)
+- **Synchronous Delivery**: Webhooks send immediately with 5-second timeout and 1 retry
+- **Fail-Safe**: Webhook failures never block flag operations
+
+#### Configuration Options
+
+Global webhook behavior can be configured in `etc/config.ini`:
+
+```ini
+[webhooks]
+webhooks.enabled = true      # Enable/disable all webhooks
+webhooks.timeout = 5         # HTTP request timeout (seconds)
+webhooks.max_retries = 1     # Number of retry attempts
+```
+
 ### Using the Flag API Directly
 
 Phlag provides three endpoints for retrieving flag values. All require Bearer token authentication.
@@ -402,6 +566,69 @@ phlag/
 ### Database Migrations
 
 Schema changes are tracked in the `schema/` directory. To update your database:
+
+#### Upgrading to v2.0 (Webhooks Feature)
+
+If you're upgrading from a version before webhooks were added, run this migration:
+
+**MySQL:**
+```sql
+CREATE TABLE IF NOT EXISTS phlag_webhooks (
+    phlag_webhook_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(2048) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    headers_json TEXT,
+    payload_template TEXT,
+    event_types_json TEXT NOT NULL,
+    include_environment_changes TINYINT(1) NOT NULL DEFAULT 0,
+    create_datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_datetime DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (phlag_webhook_id),
+    KEY name (name),
+    KEY is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**PostgreSQL:**
+```sql
+CREATE TABLE IF NOT EXISTS phlag_webhooks (
+    phlag_webhook_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    url VARCHAR(2048) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    headers_json TEXT,
+    payload_template TEXT,
+    event_types_json TEXT NOT NULL,
+    include_environment_changes BOOLEAN NOT NULL DEFAULT false,
+    create_datetime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_datetime TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
+```
+
+**SQLite:**
+```sql
+CREATE TABLE IF NOT EXISTS phlag_webhooks (
+    phlag_webhook_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    headers_json TEXT,
+    payload_template TEXT,
+    event_types_json TEXT NOT NULL,
+    include_environment_changes INTEGER NOT NULL DEFAULT 0,
+    create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+    update_datetime TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
+```
+
+After running the migration, webhooks will automatically fire when flags change. Configure your first webhook via the admin UI at `/webhooks`.
 
 ### Adding New Features
 

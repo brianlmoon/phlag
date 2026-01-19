@@ -75,6 +75,7 @@ class Repository extends \DealNews\DataMapper\Repository {
      * - PhlagUser: Maps to the phlag_users table
      * - PhlagEnvironment: Maps to the phlag_environments table
      * - PhlagEnvironmentValue: Maps to the phlag_environment_values table
+     * - PhlagWebhook: Maps to the phlag_webhooks table
      * - PasswordResetToken: Maps to the phlag_password_reset_tokens table
      * - PhlagSession: Maps to the phlag_sessions table
      *
@@ -91,6 +92,7 @@ class Repository extends \DealNews\DataMapper\Repository {
             'PhlagUser'                => new \Moonspot\Phlag\Mapper\PhlagUser(),
             'PhlagEnvironment'         => new \Moonspot\Phlag\Mapper\PhlagEnvironment(),
             'PhlagEnvironmentValue'    => new \Moonspot\Phlag\Mapper\PhlagEnvironmentValue(),
+            'PhlagWebhook'             => new \Moonspot\Phlag\Mapper\PhlagWebhook(),
             'PasswordResetToken'       => new \Moonspot\Phlag\Mapper\PasswordResetToken(),
             'PhlagSession'             => new \Moonspot\Phlag\Mapper\PhlagSession(),
         ];
