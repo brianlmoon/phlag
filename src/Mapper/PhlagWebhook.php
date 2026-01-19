@@ -173,25 +173,10 @@ class PhlagWebhook extends \DealNews\DB\AbstractMapper {
      * @return bool True if IP is private
      */
     protected function isPrivateIp(string $ip): bool {
-
-        $return = false;
-
-        // Check if it's a valid IP
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            $return = false;
-        }
-
-        // Check private ranges
-        if (
-            filter_var(
-                $ip,
-                FILTER_VALIDATE_IP,
-                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-            ) === false
-        ) {
-            $return = true;
-        }
-
-        return $return;
+        return filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) === false;
     }
 }
