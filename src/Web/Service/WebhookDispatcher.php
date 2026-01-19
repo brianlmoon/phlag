@@ -534,9 +534,25 @@ class WebhookDispatcher {
                 $e->getMessage()
             ));
             // Fallback to default template
-            $default = $this->getDefaultTemplate();
-            $twig_template = $this->twig->createTemplate($default);
-            $return = $twig_template->render($context);
+            try {
+                $default = $this->getDefaultTemplate();
+                $twig_template = $this->twig->createTemplate($default);
+                $return = $twig_template->render($context);
+            } catch (\Throwable $fallbackException) {
+                error_log(sprintf(
+                    "Webhook default template rendering failed: %s",
+                    $fallbackException->getMessage()
+                ));
+                // As a last resort, return a minimal JSON error payload
+                $errorPayload = json_encode([
+                    'error'   => 'Webhook rendering failed',
+                    'message' => 'Both custom and default templates failed to render.',
+                ]);
+                // Guard against json_encode failure
+                $return = $errorPayload !== false
+                    ? $errorPayload
+                    : '{"error":"Webhook rendering failed"}';
+            }
         }
 
         return $return;
