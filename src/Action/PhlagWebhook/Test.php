@@ -176,8 +176,15 @@ class Test extends Base {
         }
     }
 
+    /**
+     * This action is fully handled by run() and does not require
+     * additional data loading via the Base::loadData() mechanism.
+     *
+     * Returning an empty array is intentional.
+     *
+     * @return array
+     */
     public function loadData(): array {
         return [];
-        // TODO: Implement loadData() method.
     }
 }
