@@ -44,7 +44,7 @@ If you want to be notified when flags change, set up webhooks to send HTTP POST 
    - **Name:** "Slack Notifications"
    - **URL:** Your HTTPS endpoint (e.g., Slack incoming webhook URL)
    - **Status:** Active
-   - **Event Types:** Check `phlag_created` and `phlag_updated`
+   - **Event Types:** Check `created` and `updated`
    - **Include environment changes:** Check if you want notifications on environment value updates
    - **Custom Headers:** Add any required authentication headers
    - **Payload Template:** Customize the JSON payload (default provided)
