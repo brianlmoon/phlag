@@ -197,7 +197,7 @@ class WebhookDispatcher {
      * Dispatches a test webhook and returns the result.
      *
      * Unlike dispatch(), this method returns the HTTP response details
-     * for testing purposes. Uses real flag data and simulates a
+     * for testing purposes.
      * Uses real flag data and simulates a phlag update event (with
      * previous values) to validate the webhook's Twig template.
      *
