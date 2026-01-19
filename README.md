@@ -593,16 +593,18 @@ CREATE TABLE IF NOT EXISTS phlag_webhooks (
 CREATE TABLE IF NOT EXISTS phlag_webhooks (
     phlag_webhook_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    url VARCHAR(1024) NOT NULL,
-    is_active SMALLINT NOT NULL DEFAULT 1,
-    headers_json TEXT DEFAULT NULL,
-    payload_template TEXT NOT NULL,
+    url VARCHAR(2048) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    headers_json TEXT,
+    payload_template TEXT,
     event_types_json TEXT NOT NULL,
-    include_environment_changes SMALLINT NOT NULL DEFAULT 0
+    include_environment_changes BOOLEAN NOT NULL DEFAULT false,
+    create_datetime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_datetime TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS phlag_webhooks_name_idx ON phlag_webhooks(name);
-CREATE INDEX IF NOT EXISTS phlag_webhooks_is_active_idx ON phlag_webhooks(is_active);
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
 ```
 
 **SQLite:**
@@ -612,14 +614,16 @@ CREATE TABLE IF NOT EXISTS phlag_webhooks (
     name TEXT NOT NULL,
     url TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
-    headers_json TEXT DEFAULT NULL,
-    payload_template TEXT NOT NULL,
+    headers_json TEXT,
+    payload_template TEXT,
     event_types_json TEXT NOT NULL,
-    include_environment_changes INTEGER NOT NULL DEFAULT 0
+    include_environment_changes INTEGER NOT NULL DEFAULT 0,
+    create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
+    update_datetime TEXT
 );
 
-CREATE INDEX IF NOT EXISTS phlag_webhooks_name ON phlag_webhooks(name);
-CREATE INDEX IF NOT EXISTS phlag_webhooks_is_active ON phlag_webhooks(is_active);
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
 ```
 
 After running the migration, webhooks will automatically fire when flags change. Configure your first webhook via the admin UI at `/webhooks`.
