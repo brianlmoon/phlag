@@ -647,36 +647,36 @@ class WebhookDispatcher {
     protected function getDefaultTemplate(): string {
 
         return '{
-  "event": "{{ event_type|raw }}",
+  "event": {{ event_type|json_encode|raw }},
   "flag": {
-    "name": "{{ flag.name|raw }}",
-    "type": "{{ flag.type|raw }}",
-    "description": "{{ flag.description|raw }}",
+    "name": {{ flag.name|json_encode|raw }},
+    "type": {{ flag.type|json_encode|raw }},
+    "description": {{ flag.description|json_encode|raw }},
     "environments": [
       {% for env in environments %}
       {
-        "name": "{{ env.name|raw }}",
-        "value": "{{ env.value|raw }}",
-        "start_datetime": "{{ env.start_datetime|raw }}",
-        "end_datetime": "{{ env.end_datetime|raw }}"
+        "name": {{ env.name|json_encode|raw }},
+        "value": {{ env.value|json_encode|raw }},
+        "start_datetime": {{ env.start_datetime|json_encode|raw }},
+        "end_datetime": {{ env.end_datetime|json_encode|raw }}
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
   }{% if old_value is not null %},
   "previous": {
-    "description": "{{ old_value|raw }}",
+    "description": {{ old_value|json_encode|raw }},
     "environments": [
       {% for env in old_environments %}
       {
-        "name": "{{ env.name|raw }}",
-        "value": "{{ env.value|raw }}",
-        "start_datetime": "{{ env.start_datetime|raw }}",
-        "end_datetime": "{{ env.end_datetime|raw }}"
+        "name": {{ env.name|json_encode|raw }},
+        "value": {{ env.value|json_encode|raw }},
+        "start_datetime": {{ env.start_datetime|json_encode|raw }},
+        "end_datetime": {{ env.end_datetime|json_encode|raw }}
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
   }{% endif %},
-  "timestamp": "{{ timestamp|raw }}"
+  "timestamp": {{ timestamp|json_encode|raw }}
 }';
     }
 }
