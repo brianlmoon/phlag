@@ -224,7 +224,7 @@ class WebhookDispatcher {
                 $webhook,
                 'updated',
                 $flag,
-                $flag->value
+                $flag
             );
 
             // Send request with cURL
