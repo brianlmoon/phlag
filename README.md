@@ -603,8 +603,8 @@ CREATE TABLE IF NOT EXISTS phlag_webhooks (
     update_datetime TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS phlag_webhooks_name_idx ON phlag_webhooks(name);
-CREATE INDEX IF NOT EXISTS phlag_webhooks_is_active_idx ON phlag_webhooks(is_active);
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
 ```
 
 **SQLite:**
@@ -622,8 +622,8 @@ CREATE TABLE IF NOT EXISTS phlag_webhooks (
     update_datetime TEXT
 );
 
-CREATE INDEX IF NOT EXISTS phlag_webhooks_name ON phlag_webhooks(name);
-CREATE INDEX IF NOT EXISTS phlag_webhooks_is_active ON phlag_webhooks(is_active);
+CREATE INDEX IF NOT EXISTS idx_webhook_name ON phlag_webhooks(name);
+CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
 ```
 
 After running the migration, webhooks will automatically fire when flags change. Configure your first webhook via the admin UI at `/webhooks`.
