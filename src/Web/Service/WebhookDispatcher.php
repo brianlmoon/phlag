@@ -30,10 +30,8 @@ use Twig\Loader\ArrayLoader;
  *
  * Set optional configuration via GetConfig:
  *
- * - `webhooks.enabled` - true/false to enable webhooks globally
  * - `webhooks.timeout` - Timeout in seconds (default: 5)
  * - `webhooks.max_retries` - Max retry attempts (default: 1)
- * - `webhooks.allow_http` - Allow http:// URLs (default: false)
  *
  * ## Usage
  *
@@ -125,7 +123,8 @@ class WebhookDispatcher {
      *
      * Fetches all active webhooks, filters by event type, and sends
      * HTTP POST requests. Retries once on failure. Logs errors but
-     * never throws exceptions (fail-safe design).
+     * never throws exceptions (fail-safe design). If no webhooks are
+     * configured, returns early without making any requests.
      *
      * @param string $event_type 'created', 'updated', 'deleted'
      * @param Phlag $flag Current flag state
@@ -137,12 +136,6 @@ class WebhookDispatcher {
         Phlag $flag,
         ?Phlag $old_flag = null
     ): void {
-
-        // Check if webhooks are globally enabled
-        $enabled = $this->config->get('webhooks.enabled', 'true');
-        if ($enabled !== 'true' && $enabled !== '1') {
-            return;
-        }
 
         try {
             // Fetch active webhooks
@@ -305,12 +298,6 @@ class WebhookDispatcher {
         string $event_type,
         PhlagEnvironmentValue $env_value
     ): void {
-
-        // Check if webhooks are globally enabled
-        $enabled = $this->config->get('webhooks.enabled', 'true');
-        if ($enabled !== 'true' && $enabled !== '1') {
-            return;
-        }
 
         try {
             // Fetch parent flag

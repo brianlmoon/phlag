@@ -423,10 +423,11 @@ Global webhook behavior can be configured in `etc/config.ini`:
 
 ```ini
 [webhooks]
-webhooks.enabled = true      # Enable/disable all webhooks
 webhooks.timeout = 5         # HTTP request timeout (seconds)
 webhooks.max_retries = 1     # Number of retry attempts
 ```
+
+**Note**: Webhooks are always enabled. If you don't want webhooks to fire, simply don't create any webhook configurations in the admin interface.
 
 ### Using the Flag API Directly
 

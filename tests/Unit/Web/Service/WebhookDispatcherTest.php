@@ -21,37 +21,6 @@ use PHPUnit\Framework\TestCase;
 class WebhookDispatcherTest extends TestCase {
 
     /**
-     * Tests dispatch skips when webhooks are disabled
-     *
-     * Verifies that no webhooks are sent when webhooks.enabled is false.
-     *
-     * @return void
-     */
-    public function testDispatchSkipsWhenDisabled(): void {
-
-        $config = $this->createMock(GetConfig::class);
-        $config->method('get')
-            ->willReturnCallback(function ($key, $default) {
-                return match ($key) {
-                    'webhooks.enabled' => 'false',
-                    default => $default,
-                };
-            });
-
-        $repository = $this->createMock(Repository::class);
-        $repository->expects($this->never())
-            ->method('find');
-
-        $dispatcher = new WebhookDispatcher($repository, $config);
-
-        $flag = $this->createMockFlag();
-        $dispatcher->dispatch('created', $flag);
-
-        // Test passes if no exceptions thrown and no repository calls made
-        $this->assertTrue(true);
-    }
-
-    /**
      * Tests dispatch returns early when no webhooks exist
      *
      * @return void
@@ -61,10 +30,7 @@ class WebhookDispatcherTest extends TestCase {
         $config = $this->createMock(GetConfig::class);
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
-                return match ($key) {
-                    'webhooks.enabled' => 'true',
-                    default => $default,
-                };
+                return $default;
             });
 
         $repository = $this->createMock(Repository::class);
@@ -94,7 +60,7 @@ class WebhookDispatcherTest extends TestCase {
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
                 return match ($key) {
-                    'webhooks.enabled' => 'true',
+                    
                     'webhooks.timeout' => '5',
                     'webhooks.max_retries' => '0',
                     default => $default,
@@ -142,7 +108,7 @@ class WebhookDispatcherTest extends TestCase {
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
                 return match ($key) {
-                    'webhooks.enabled' => 'true',
+                    
                     'webhooks.timeout' => '5',
                     'webhooks.max_retries' => '0',
                     default => $default,
@@ -206,7 +172,7 @@ class WebhookDispatcherTest extends TestCase {
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
                 return match ($key) {
-                    'webhooks.enabled' => 'true',
+                    
                     'webhooks.timeout' => '5',
                     'webhooks.max_retries' => '0',
                     default => $default,
@@ -257,7 +223,7 @@ class WebhookDispatcherTest extends TestCase {
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
                 return match ($key) {
-                    'webhooks.enabled' => 'true',
+                    
                     'webhooks.timeout' => '5',
                     'webhooks.max_retries' => '0',
                     default => $default,
@@ -330,7 +296,7 @@ class WebhookDispatcherTest extends TestCase {
         $config->method('get')
             ->willReturnCallback(function ($key, $default) {
                 return match ($key) {
-                    'webhooks.enabled' => 'true',
+                    
                     'webhooks.timeout' => '5',
                     'webhooks.max_retries' => '0',
                     default => $default,

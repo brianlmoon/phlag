@@ -80,7 +80,7 @@ class Phlag extends \DealNews\DB\AbstractMapper {
      * - Creates: Dispatches 'created' event
      * - Updates: Dispatches 'updated' event with old_flag context
      * - Webhook failures are logged but never block the save
-     * - Webhooks are skipped if webhooks.enabled config is false
+     * - Webhooks are skipped if no active webhooks are configured
      *
      * @param object $object Phlag object to save
      * @return object Saved Phlag object
