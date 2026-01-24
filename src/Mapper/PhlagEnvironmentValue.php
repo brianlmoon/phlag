@@ -40,7 +40,7 @@ use Moonspot\Phlag\Web\Service\WebhookDispatcher;
  * $env_value->phlag_id = 1;
  * $env_value->phlag_environment_id = 2;
  * $env_value->value = "true";
- * 
+ *
  * $mapper->save($env_value); // Webhooks dispatched automatically
  * ```
  *
@@ -123,5 +123,39 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
         }
 
         return $saved;
+    }
+
+    /**
+     * Deletes an environment value and dispatches webhooks.
+     *
+     * Fetches the object before deletion to dispatch webhooks with full
+     * context. Only dispatches to webhooks with include_environment_changes
+     * enabled. Webhook failures are logged but never block the delete.
+     *
+     * @param int $id PhlagEnvironmentValue ID to delete
+     * @return bool True on successful deletion
+     */
+    public function delete($id): bool {
+
+        // Fetch object before deletion for webhook context
+        try {
+            $object = $this->get($id);
+            if ($object !== null) {
+                $dispatcher = new WebhookDispatcher();
+                $dispatcher->dispatchEnvironmentChange(
+                    'environment_value_updated',
+                    $object
+                );
+            }
+        } catch (\Throwable $e) {
+            error_log(sprintf(
+                "Webhook dispatch failed for environment value %s: %s",
+                $id,
+                $e->getMessage()
+            ));
+        }
+
+        // Call parent delete method
+        return parent::delete($id);
     }
 }

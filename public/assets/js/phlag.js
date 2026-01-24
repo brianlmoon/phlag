@@ -713,9 +713,10 @@ const PhlagManager = {
     /**
      * Updates an existing phlag
      * 
-     * Updates the flag metadata, then updates all environment values.
-     * Deletes existing environment values and creates new ones to ensure
-     * clean state.
+     * Updates environment values first, then updates the flag metadata.
+     * This ensures webhooks fired on flag save have access to the new
+     * environment values. Deletes existing environment values and creates
+     * new ones to ensure clean state.
      * 
      * @param {number} id - Phlag ID to update
      * @param {object} form_data - Form data to submit (description only, name/type immutable)
@@ -727,11 +728,11 @@ const PhlagManager = {
         // Add the ID to the form data
         form_data.phlag_id = parseInt(id);
         
-        // Step 1: Update the flag
-        this.api.put('/Phlag/' + id + '/', form_data)
+        // Step 1: Update environment values FIRST
+        this._updateEnvironmentValues(id, env_values)
             .then(() => {
-                // Step 2: Update environment values
-                return this._updateEnvironmentValues(id, env_values);
+                // Step 2: Update the flag (webhooks will see new env values)
+                return this.api.put('/Phlag/' + id + '/', form_data);
             })
             .then(() => {
                 UI.hideLoading();

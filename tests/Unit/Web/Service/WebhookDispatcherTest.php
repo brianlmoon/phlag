@@ -137,7 +137,7 @@ class WebhookDispatcherTest extends TestCase {
             ]);
         $repository->method('get')
             ->willReturnMap([
-                ['PhlagEnvironment', 1, $env],
+                ['PhlagEnvironment', 1, false, $env],
             ]);
 
         $dispatcher = $this->getMockBuilder(WebhookDispatcher::class)
@@ -319,8 +319,8 @@ class WebhookDispatcherTest extends TestCase {
         $repository = $this->createMock(Repository::class);
         $repository->method('get')
             ->willReturnMap([
-                ['Phlag', 1, $flag],
-                ['PhlagEnvironment', 1, $environment],
+                ['Phlag', 1, false, $flag],
+                ['PhlagEnvironment', 1, false, $environment],
             ]);
         $repository->method('find')
             ->willReturnMap([

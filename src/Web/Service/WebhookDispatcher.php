@@ -301,7 +301,7 @@ class WebhookDispatcher {
 
         try {
             // Fetch parent flag
-            $flag = $this->repository->get('Phlag', $env_value->phlag_id);
+            $flag = $this->repository->get('Phlag', $env_value->phlag_id, false);
             if ($flag === null) {
                 return;
             }
@@ -309,7 +309,8 @@ class WebhookDispatcher {
             // Fetch environment name
             $environment = $this->repository->get(
                 'PhlagEnvironment',
-                $env_value->phlag_environment_id
+                $env_value->phlag_environment_id,
+                false
             );
             if ($environment === null) {
                 return;
@@ -478,7 +479,8 @@ class WebhookDispatcher {
         foreach ($env_values as $env_value) {
             $env = $this->repository->get(
                 'PhlagEnvironment',
-                $env_value->phlag_environment_id
+                $env_value->phlag_environment_id,
+                false
             );
 
             if ($env !== null) {
