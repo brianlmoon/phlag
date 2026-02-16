@@ -104,15 +104,15 @@ const UserManager = {
         
         const username = this._escapeHtml(user.username || '');
         const full_name = this._escapeHtml(user.full_name || '');
-        const created = user.create_datetime || '';
+        const created = this._formatDate(user.create_datetime);
         
         row.innerHTML = `
             <td>${username}</td>
             <td class="hide-mobile">${full_name}</td>
             <td class="hide-mobile">${created}</td>
             <td class="table-actions">
-                <a href="${this.base_url}/users/${user.phlag_user_id}" class="btn btn-sm">View</a>
-                <a href="${this.base_url}/users/${user.phlag_user_id}/edit" class="btn btn-sm btn-primary">Edit</a>
+                <a href="${this.base_url}/users/${user.phlag_user_id}" class="btn btn-small btn-primary">View</a>
+                <a href="${this.base_url}/users/${user.phlag_user_id}/edit" class="btn btn-small btn-secondary">Edit</a>
             </td>
         `;
         
@@ -318,6 +318,25 @@ const UserManager = {
                 UI.hideLoading();
                 UI.showMessage('Failed to delete user: ' + error.message, 'error');
             });
+    },
+    
+    /**
+     * Formats a datetime string for display
+     * 
+     * Converts database datetime strings to user-friendly locale format.
+     * Returns 'N/A' for null/empty values.
+     * 
+     * @param {string} datetime - Datetime string from database
+     * @returns {string} Formatted datetime or 'N/A'
+     * @private
+     */
+    _formatDate: function(datetime) {
+        if (!datetime) {
+            return 'N/A';
+        }
+        
+        const date = new Date(datetime);
+        return date.toLocaleString();
     },
     
     /**

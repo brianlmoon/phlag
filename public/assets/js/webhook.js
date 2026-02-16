@@ -153,13 +153,13 @@ const WebhookManager = {
         const edit_link = document.createElement('a');
         edit_link.href = this.base_url + '/webhooks/' + webhook.phlag_webhook_id + '/edit';
         edit_link.textContent = 'Edit';
-        edit_link.className = 'action-link';
+        edit_link.className = 'btn btn-small btn-secondary';
         actions_cell.appendChild(edit_link);
 
         const test_link = document.createElement('a');
         test_link.href = '#';
         test_link.textContent = 'Test';
-        test_link.className = 'action-link';
+        test_link.className = 'btn btn-small btn-primary';
         test_link.onclick = (e) => {
             e.preventDefault();
             this.testWebhook(webhook.phlag_webhook_id);
@@ -169,7 +169,7 @@ const WebhookManager = {
         const delete_link = document.createElement('a');
         delete_link.href = '#';
         delete_link.textContent = 'Delete';
-        delete_link.className = 'action-link action-delete';
+        delete_link.className = 'btn btn-small btn-danger';
         delete_link.onclick = (e) => {
             e.preventDefault();
             this.deleteWebhook(webhook.phlag_webhook_id, webhook.name);

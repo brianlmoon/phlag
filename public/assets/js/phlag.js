@@ -1216,7 +1216,7 @@ const PhlagManager = {
                         <th>Value</th>
                         <th>Start Date/Time</th>
                         <th>End Date/Time</th>
-                        <th>Status</th>
+                        <th>Updated</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1242,26 +1242,8 @@ const PhlagManager = {
                     display_value = env_value.value === 'true' ? '✓ true' : '✗ false';
                 }
                 
-                // Determine status
-                const now = new Date();
-                let status_label = 'Active';
-                let status_class = 'active';
-                
-                if (env_value.start_datetime) {
-                    const start = new Date(env_value.start_datetime);
-                    if (now < start) {
-                        status_label = 'Scheduled';
-                        status_class = 'scheduled';
-                    }
-                }
-                
-                if (env_value.end_datetime) {
-                    const end = new Date(env_value.end_datetime);
-                    if (now > end) {
-                        status_label = 'Expired';
-                        status_class = 'expired';
-                    }
-                }
+                // Use update_datetime or fall back to create_datetime
+                const updated_datetime = env_value.update_datetime || env_value.create_datetime;
                 
                 table_html += `
                     <tr>
@@ -1269,7 +1251,7 @@ const PhlagManager = {
                         <td><code>${this._escapeHtml(display_value)}</code></td>
                         <td>${this._formatDate(env_value.start_datetime)}</td>
                         <td>${this._formatDate(env_value.end_datetime)}</td>
-                        <td><span class="status-badge status-${status_class}">${status_label}</span></td>
+                        <td>${this._formatDate(updated_datetime)}</td>
                     </tr>
                 `;
             }
