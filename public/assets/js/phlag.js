@@ -845,6 +845,11 @@ const PhlagManager = {
      * case-insensitive manner. Results are updated in real-time by
      * showing/hiding table rows.
      * 
+     * URL State Persistence:
+     * Reads search term from hash fragment on load and updates hash
+     * when search changes. This allows bookmarking searches and 
+     * preserves search state during browser navigation.
+     * 
      * @return {void}
      */
     initSearch: function() {
@@ -859,6 +864,31 @@ const PhlagManager = {
         // Show results counter
         results_counter.classList.remove('hidden');
         this._updateResultsCounter();
+        
+        // Restore search from URL hash if present
+        const initial_search = this._getSearchFromHash();
+        if (initial_search) {
+            search_input.value = initial_search;
+            clear_btn.classList.remove('hidden');
+            this.filterFlags(initial_search);
+        }
+        
+        // Handle browser back/forward navigation
+        window.addEventListener('hashchange', () => {
+            const hash_search = this._getSearchFromHash();
+            const current_search = search_input.value.trim();
+            
+            // Only update if hash differs from current search
+            if (hash_search !== current_search) {
+                search_input.value = hash_search;
+                if (hash_search) {
+                    clear_btn.classList.remove('hidden');
+                } else {
+                    clear_btn.classList.add('hidden');
+                }
+                this.filterFlags(hash_search);
+            }
+        });
         
         // Handle search input with debouncing
         search_input.addEventListener('input', (e) => {
@@ -903,6 +933,11 @@ const PhlagManager = {
      * Updates the results counter and shows "no results" message when
      * no flags match.
      * 
+     * URL State Persistence:
+     * Updates the URL hash with the search term to enable bookmarking
+     * and browser navigation. Uses replaceState to avoid polluting
+     * browser history.
+     * 
      * @param {string} search_term - The search query
      * 
      * @return {void}
@@ -915,6 +950,9 @@ const PhlagManager = {
         const term_lower = search_term.toLowerCase();
         
         let visible_count = 0;
+        
+        // Update URL hash with search term
+        this._updateSearchHash(search_term);
         
         // If search is empty, show all rows
         if (!search_term) {
@@ -1003,6 +1041,85 @@ const PhlagManager = {
         
         visible_el.textContent = visible;
         total_el.textContent = total;
+    },
+    
+    /**
+     * Reads the search term from the URL hash fragment
+     * 
+     * Parses the hash fragment and extracts the search parameter.
+     * Handles URL decoding to support special characters.
+     * 
+     * Edge Cases:
+     *     - Empty or missing hash returns empty string
+     *     - Malformed hash returns empty string
+     *     - URL-encoded characters are properly decoded
+     * 
+     * @return {string} Decoded search term or empty string
+     * 
+     * @private
+     */
+    _getSearchFromHash: function() {
+        const hash = window.location.hash;
+        
+        if (!hash || hash.length <= 1) {
+            return '';
+        }
+        
+        // Remove leading # and parse search parameter
+        const hash_content = hash.substring(1);
+        
+        if (hash_content.startsWith('search=')) {
+            const search_term = hash_content.substring(7); // 'search='.length
+            try {
+                return decodeURIComponent(search_term);
+            } catch (e) {
+                // Handle malformed URI encoding
+                return '';
+            }
+        }
+        
+        return '';
+    },
+    
+    /**
+     * Updates the URL hash with the current search term
+     * 
+     * Uses history.replaceState to update the hash without adding
+     * browser history entries. Clears hash when search is empty.
+     * Handles URL encoding to support special characters.
+     * 
+     * Avoids infinite loops by only updating if hash differs from
+     * current value.
+     * 
+     * @param {string} search_term - The search query to persist
+     * 
+     * @return {void}
+     * 
+     * @private
+     */
+    _updateSearchHash: function(search_term) {
+        const current_hash = this._getSearchFromHash();
+        
+        // Avoid updating if hash already matches
+        if (current_hash === search_term) {
+            return;
+        }
+        
+        let new_hash = '';
+        if (search_term) {
+            new_hash = '#search=' + encodeURIComponent(search_term);
+        }
+        
+        // Use replaceState to avoid polluting browser history
+        if (window.history && window.history.replaceState) {
+            const new_url = window.location.pathname + 
+                           window.location.search + 
+                           new_hash;
+            window.history.replaceState(null, '', new_url);
+        } else {
+            // Fallback for older browsers
+            window.location.hash = new_hash;
+        }
     },
     
     /**
