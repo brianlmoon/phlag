@@ -1428,11 +1428,17 @@ table td.hide-mobile:nth-child(5) {
 }
 
 /* Code textarea for payload template */
-.code-textarea {
+.form-group textarea.code-textarea {
     font-family: 'Monaco', 'Courier New', monospace;
     font-size: 0.875rem;
     line-height: 1.5;
     tab-size: 2;
+}
+
+/* Environment value textarea for STRING flags */
+.env-value-textarea {
+    min-height: 60px;
+    overflow-y: hidden;
 }
 
 /* Event type checkboxes */

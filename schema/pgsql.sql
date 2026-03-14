@@ -43,7 +43,7 @@ CREATE TABLE phlag_environment_values (
     phlag_environment_value_id bigserial PRIMARY KEY,
     phlag_id bigint NOT NULL REFERENCES phlags(phlag_id) ON DELETE CASCADE,
     phlag_environment_id bigint NOT NULL REFERENCES phlag_environments(phlag_environment_id) ON DELETE CASCADE,
-    value varchar(255) DEFAULT NULL,
+    value text DEFAULT NULL,
     start_datetime timestamp DEFAULT NULL,
     end_datetime timestamp DEFAULT NULL,
     create_datetime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -432,6 +432,7 @@ const PhlagManager = {
                 <div class="form-group">
                     <label for="env_value_${env_id}">Value</label>
                     <input type="text" id="env_value_${env_id}" class="env-value-input" placeholder="Leave empty to not configure">
+                    <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
                     <select id="env_value_select_${env_id}" class="env-value-select hidden">
                         <option value="">-- Not Configured --</option>
                         <option value="true">true</option>
@@ -485,6 +486,7 @@ const PhlagManager = {
      * 
      * Switches between text input and select for SWITCH type,
      * and updates input type attributes for INTEGER/FLOAT types.
+     * For STRING type, uses textarea with auto-grow.
      * 
      * @param {string} type - The selected phlag type
      * 
@@ -492,33 +494,59 @@ const PhlagManager = {
      */
     _updateEnvironmentInputTypes: function(type) {
         const is_switch = (type === 'SWITCH');
+        const is_string = (type === 'STRING');
         
         this.environments.forEach(env => {
             const env_id = env.phlag_environment_id;
             const value_input = document.getElementById(`env_value_${env_id}`);
+            const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
             
-            if (!value_input || !value_select) {
+            if (!value_input || !value_select || !value_textarea) {
                 return;
             }
             
             if (is_switch) {
-                // Show select, hide input
+                // Show select, hide input and textarea
                 value_input.classList.add('hidden');
+                value_textarea.classList.add('hidden');
                 value_select.classList.remove('hidden');
                 
                 // Transfer value if it exists
                 if (value_input.value === 'true' || value_input.value === 'false') {
                     value_select.value = value_input.value;
+                } else if (value_textarea.value === 'true' || value_textarea.value === 'false') {
+                    value_select.value = value_textarea.value;
                 }
-            } else {
-                // Show input, hide select
+            } else if (is_string) {
+                // Show textarea, hide input and select
+                value_input.classList.add('hidden');
                 value_select.classList.add('hidden');
+                value_textarea.classList.remove('hidden');
+                
+                // Transfer value if it exists
+                if (value_input.value) {
+                    value_textarea.value = value_input.value;
+                } else if (value_select.value && value_select.value !== '') {
+                    value_textarea.value = value_select.value;
+                }
+                
+                // Set up auto-grow
+                this._setupAutoGrow(value_textarea);
+                
+                value_textarea.setAttribute('maxlength', '65535');
+                value_textarea.placeholder = 'e.g., {"key": "value"} or multi-line text';
+            } else {
+                // Show input, hide select and textarea
+                value_select.classList.add('hidden');
+                value_textarea.classList.add('hidden');
                 value_input.classList.remove('hidden');
                 
                 // Transfer value if it exists
-                if (value_select.value === 'true' || value_select.value === 'false') {
+                if (value_select.value && value_select.value !== '') {
                     value_input.value = value_select.value;
+                } else if (value_textarea.value) {
+                    value_input.value = value_textarea.value;
                 }
                 
                 // Update input type based on flag type
@@ -532,14 +560,31 @@ const PhlagManager = {
                     value_input.setAttribute('step', 'any');
                     value_input.removeAttribute('maxlength');
                     value_input.placeholder = 'e.g., 3.14';
-                } else {
-                    value_input.setAttribute('type', 'text');
-                    value_input.removeAttribute('step');
-                    value_input.setAttribute('maxlength', '255');
-                    value_input.placeholder = 'e.g., hello world';
                 }
             }
         });
+    },
+    
+    /**
+     * Sets up auto-grow functionality for a textarea
+     * 
+     * Adjusts textarea height automatically as content is added or removed.
+     * 
+     * @param {HTMLTextAreaElement} textarea - The textarea element
+     * 
+     * @private
+     */
+    _setupAutoGrow: function(textarea) {
+        const adjustHeight = function() {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        };
+        
+        // Adjust on input
+        textarea.addEventListener('input', adjustHeight);
+        
+        // Initial adjustment
+        adjustHeight();
     },
     
     /**
@@ -557,10 +602,12 @@ const PhlagManager = {
         const env_values = [];
         const type_select = document.getElementById('type');
         const is_switch = (type_select && type_select.value === 'SWITCH');
+        const is_string = (type_select && type_select.value === 'STRING');
         
         this.environments.forEach(env => {
             const env_id = env.phlag_environment_id;
             const value_input = document.getElementById(`env_value_${env_id}`);
+            const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
             const start_input = document.getElementById(`env_start_${env_id}`);
             const end_input = document.getElementById(`env_end_${env_id}`);
@@ -570,7 +617,14 @@ const PhlagManager = {
             }
             
             // Get value from appropriate input
-            const value = is_switch ? value_select.value : value_input.value;
+            let value = '';
+            if (is_switch) {
+                value = value_select.value;
+            } else if (is_string) {
+                value = value_textarea.value;
+            } else {
+                value = value_input.value;
+            }
             
             // Only include if value is set or if temporal constraints exist
             if (value !== '' || start_input.value !== '' || end_input.value !== '') {
@@ -1435,10 +1489,12 @@ const PhlagManager = {
      */
     _populateEnvironmentValues: function(env_values, type) {
         const is_switch = (type === 'SWITCH');
+        const is_string = (type === 'STRING');
         
         env_values.forEach(ev => {
             const env_id = ev.phlag_environment_id;
             const value_input = document.getElementById(`env_value_${env_id}`);
+            const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
             const start_input = document.getElementById(`env_start_${env_id}`);
             const end_input = document.getElementById(`env_end_${env_id}`);
@@ -1450,6 +1506,10 @@ const PhlagManager = {
             // Set value in appropriate input
             if (is_switch && value_select) {
                 value_select.value = ev.value || '';
+            } else if (is_string && value_textarea) {
+                value_textarea.value = ev.value || '';
+                // Trigger auto-grow after setting value
+                this._setupAutoGrow(value_textarea);
             } else {
                 value_input.value = ev.value || '';
             }

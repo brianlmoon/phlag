@@ -51,7 +51,7 @@ CREATE TABLE `phlag_environment_values` (
     `phlag_environment_value_id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `phlag_id` bigint unsigned NOT NULL,
     `phlag_environment_id` bigint unsigned NOT NULL,
-    `value` varchar(255) DEFAULT NULL,
+    `value` text DEFAULT NULL,
     `start_datetime` datetime DEFAULT NULL,
     `end_datetime` datetime DEFAULT NULL,
     `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
