@@ -103,7 +103,7 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
      *
      * @param object $object PhlagEnvironmentValue object to save
      * @return object Saved PhlagEnvironmentValue object
-     * @throws \InvalidArgumentException If JSON validation fails
+     * @throws \RuntimeException If JSON validation fails
      */
     public function save($object): object {
 
@@ -141,7 +141,7 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
      *
      * @param object $object PhlagEnvironmentValue object to validate
      * @return void
-     * @throws \InvalidArgumentException If JSON is invalid or is a primitive
+     * @throws \RuntimeException If JSON is invalid or is a primitive
      */
     protected function validateJsonIfNeeded(object $object): void {
 
@@ -158,15 +158,17 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
 
         // Check for JSON errors
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \InvalidArgumentException(
-                'Invalid JSON format: ' . json_last_error_msg()
+            throw new \RuntimeException(
+                'Invalid JSON format: ' . json_last_error_msg(),
+                400
             );
         }
 
         // Ensure it's an object or array (not primitive)
         if (!is_object($decoded) && !is_array($decoded)) {
-            throw new \InvalidArgumentException(
-                'Invalid JSON format: JSON must be an object or array'
+            throw new \RuntimeException(
+                'Invalid JSON format: JSON must be an object or array',
+                400
             );
         }
     }
