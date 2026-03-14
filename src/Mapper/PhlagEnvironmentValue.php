@@ -140,13 +140,17 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
      * objects or arrays (not primitives). Throws exception if invalid.
      *
      * @param object $object PhlagEnvironmentValue object to validate
+     * @param ?Repository $repository Optional repository for testing
      * @return void
      * @throws \RuntimeException If JSON is invalid or is a primitive
      */
-    protected function validateJsonIfNeeded(object $object): void {
+    protected function validateJsonIfNeeded(
+        object $object,
+        ?Repository $repository = null
+    ): void {
 
-        // Get the phlag to check its type
-        $repository = Repository::init();
+        // Get repository (allow injection for testing)
+        $repository = $repository ?? Repository::init();
         $phlag = $repository->get('Phlag', $object->phlag_id);
 
         if ($phlag === null || $phlag->type !== 'JSON') {
@@ -159,16 +163,14 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
         // Check for JSON errors
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException(
-                'Invalid JSON format: ' . json_last_error_msg(),
-                400
+                'Invalid JSON format: ' . json_last_error_msg()
             );
         }
 
         // Ensure it's an object or array (not primitive)
         if (!is_object($decoded) && !is_array($decoded)) {
             throw new \RuntimeException(
-                'Invalid JSON format: JSON must be an object or array',
-                400
+                'Invalid JSON format: JSON must be an object or array'
             );
         }
     }
