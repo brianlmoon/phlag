@@ -741,7 +741,7 @@ const PhlagManager = {
         });
         
         if (errors.length > 0) {
-            return 'Invalid JSON format:\n' + errors.join('\n');
+            return 'Invalid JSON format: ' + errors.join('; ');
         }
         
         return null;
