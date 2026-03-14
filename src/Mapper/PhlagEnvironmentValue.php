@@ -2,6 +2,7 @@
 
 namespace Moonspot\Phlag\Mapper;
 
+use Moonspot\Phlag\Data\Repository;
 use Moonspot\Phlag\Web\Service\WebhookDispatcher;
 
 /**
@@ -96,13 +97,20 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
     /**
      * Saves an environment value and dispatches webhooks.
      *
-     * Only dispatches webhooks to those with include_environment_changes
-     * enabled. Webhook failures are logged but never block the save.
+     * Validates JSON type values before saving. Only dispatches webhooks
+     * to those with include_environment_changes enabled. Webhook failures
+     * are logged but never block the save.
      *
      * @param object $object PhlagEnvironmentValue object to save
      * @return object Saved PhlagEnvironmentValue object
+     * @throws \InvalidArgumentException If JSON validation fails
      */
     public function save($object): object {
+
+        // Validate JSON type flags
+        if ($object->value !== null && $object->phlag_id > 0) {
+            $this->validateJsonIfNeeded($object);
+        }
 
         // Call parent save method
         $saved = parent::save($object);
@@ -123,6 +131,44 @@ class PhlagEnvironmentValue extends \DealNews\DB\AbstractMapper {
         }
 
         return $saved;
+    }
+
+    /**
+     * Validates JSON flag values
+     *
+     * Checks that JSON type flags have valid JSON values that are
+     * objects or arrays (not primitives). Throws exception if invalid.
+     *
+     * @param object $object PhlagEnvironmentValue object to validate
+     * @return void
+     * @throws \InvalidArgumentException If JSON is invalid or is a primitive
+     */
+    protected function validateJsonIfNeeded(object $object): void {
+
+        // Get the phlag to check its type
+        $repository = Repository::init();
+        $phlag = $repository->get('Phlag', $object->phlag_id);
+
+        if ($phlag === null || $phlag->type !== 'JSON') {
+            return;
+        }
+
+        // Decode JSON
+        $decoded = json_decode($object->value);
+
+        // Check for JSON errors
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException(
+                'Invalid JSON format: ' . json_last_error_msg()
+            );
+        }
+
+        // Ensure it's an object or array (not primitive)
+        if (!is_object($decoded) && !is_array($decoded)) {
+            throw new \InvalidArgumentException(
+                'Invalid JSON format: JSON must be an object or array'
+            );
+        }
     }
 
     /**

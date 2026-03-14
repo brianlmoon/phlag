@@ -137,7 +137,7 @@ Returns:
 
 ### Configuration Values
 
-Use INTEGER, FLOAT, or STRING types for configuration. STRING flags support up to 64KB of text including multi-line content, JSON, and YAML:
+Use INTEGER, FLOAT, or STRING types for configuration. STRING flags support up to ~4M characters including multi-line content, JSON, and YAML:
 
 ```php
 // In your application

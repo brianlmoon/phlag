@@ -131,6 +131,7 @@ trait FlagValueTrait {
      * - INTEGER: Converts to integer
      * - FLOAT: Converts to float
      * - STRING: Returns as-is (no casting needed)
+     * - JSON: Parses JSON string to object/array
      *
      * Heads-up: Null values are returned as-is without casting. This is important
      * because null is a valid value that indicates "no value set" which is different
@@ -143,8 +144,14 @@ trait FlagValueTrait {
      * - "false" or "0" → false
      * - Any other value → PHP boolean casting (empty strings become false)
      *
+     * ## JSON Type Casting Details
+     *
+     * For JSON types, we parse the stored string and return the decoded object/array.
+     * If parsing fails, we return null to prevent breaking the response.
+     * Only objects and arrays are allowed (primitives rejected during save).
+     *
      * @param  ?string $value The raw value from the database
-     * @param  string  $type  The phlag type (SWITCH, INTEGER, FLOAT, STRING)
+     * @param  string  $type  The phlag type (SWITCH, INTEGER, FLOAT, STRING, JSON)
      *
      * @return mixed The value cast to the appropriate type
      */
@@ -174,6 +181,20 @@ trait FlagValueTrait {
                 $ret = (float)$value;
                 break;
 
+            case 'JSON':
+                $decoded = json_decode($value);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $ret = $decoded;
+                } else {
+                    // Log error and return null for safety
+                    error_log(sprintf(
+                        "JSON decode error in castValue: %s",
+                        json_last_error_msg()
+                    ));
+                    $ret = null;
+                }
+                break;
+
             case 'STRING':
             default:
                 break;
@@ -194,6 +215,7 @@ trait FlagValueTrait {
      * - **INTEGER**: Returns `null` (indicates no value available)
      * - **FLOAT**: Returns `null` (indicates no value available)
      * - **STRING**: Returns `null` (indicates no value available)
+     * - **JSON**: Returns `null` (indicates no value available)
      *
      * ## Why SWITCH Returns False
      *
@@ -210,7 +232,7 @@ trait FlagValueTrait {
      * }
      * ```
      *
-     * @param  string $type The phlag type (SWITCH, INTEGER, FLOAT, STRING)
+     * @param  string $type The phlag type (SWITCH, INTEGER, FLOAT, STRING, JSON)
      *
      * @return mixed False for SWITCH, null for all other types
      */

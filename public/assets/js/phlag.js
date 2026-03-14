@@ -333,6 +333,15 @@ const PhlagManager = {
             const mode = form.dataset.mode;
             const form_data = FormUtils.serialize(form);
             
+            // Validate JSON type if applicable
+            if (form_data.type === 'JSON') {
+                const validation_error = this._validateJsonValues();
+                if (validation_error) {
+                    UI.showMessage(validation_error, 'error');
+                    return;
+                }
+            }
+            
             // Extract environment values from form
             const env_values = this._extractEnvironmentValues();
             
@@ -432,7 +441,10 @@ const PhlagManager = {
                 <div class="form-group">
                     <label id="env_value_label_${env_id}" for="env_value_${env_id}">Value</label>
                     <input type="text" id="env_value_${env_id}" class="env-value-input" placeholder="Leave empty to not configure">
-                    <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
+                    <div class="textarea-with-button">
+                        <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
+                        <button type="button" id="format_json_${env_id}" class="btn btn-secondary btn-format-json hidden">Format JSON</button>
+                    </div>
                     <select id="env_value_select_${env_id}" class="env-value-select hidden">
                         <option value="">-- Not Configured --</option>
                         <option value="true">true</option>
@@ -495,6 +507,7 @@ const PhlagManager = {
     _updateEnvironmentInputTypes: function(type) {
         const is_switch = (type === 'SWITCH');
         const is_string = (type === 'STRING');
+        const is_json = (type === 'JSON');
         
         this.environments.forEach(env => {
             const env_id = env.phlag_environment_id;
@@ -502,6 +515,7 @@ const PhlagManager = {
             const value_input = document.getElementById(`env_value_${env_id}`);
             const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
+            const format_button = document.getElementById(`format_json_${env_id}`);
             
             if (!value_input || !value_select || !value_textarea) {
                 return;
@@ -512,6 +526,7 @@ const PhlagManager = {
                 value_input.classList.add('hidden');
                 value_textarea.classList.add('hidden');
                 value_select.classList.remove('hidden');
+                if (format_button) format_button.classList.add('hidden');
                 
                 // Update label to point to select
                 if (value_label) {
@@ -524,11 +539,21 @@ const PhlagManager = {
                 } else if (value_textarea.value === 'true' || value_textarea.value === 'false') {
                     value_select.value = value_textarea.value;
                 }
-            } else if (is_string) {
+            } else if (is_string || is_json) {
                 // Show textarea, hide input and select
                 value_input.classList.add('hidden');
                 value_select.classList.add('hidden');
                 value_textarea.classList.remove('hidden');
+                
+                // Show format button only for JSON type
+                if (format_button) {
+                    if (is_json) {
+                        format_button.classList.remove('hidden');
+                        this._attachFormatButtonHandler(format_button, value_textarea, env.name);
+                    } else {
+                        format_button.classList.add('hidden');
+                    }
+                }
                 
                 // Update label to point to textarea
                 if (value_label) {
@@ -545,13 +570,22 @@ const PhlagManager = {
                 // Set up auto-grow
                 this._setupAutoGrow(value_textarea);
                 
-                value_textarea.setAttribute('maxlength', '65535');
-                value_textarea.placeholder = 'e.g., {"key": "value"} or multi-line text';
+                // MEDIUMTEXT supports ~4M characters with utf8mb4
+                // Set practical UI limit of 1M characters
+                value_textarea.setAttribute('maxlength', '1000000');
+                
+                // Set placeholder based on type
+                if (is_json) {
+                    value_textarea.placeholder = 'e.g., {"key": "value"} or ["item1", "item2"]';
+                } else {
+                    value_textarea.placeholder = 'e.g., {"key": "value"} or multi-line text';
+                }
             } else {
                 // Show input, hide select and textarea
                 value_select.classList.add('hidden');
                 value_textarea.classList.add('hidden');
                 value_input.classList.remove('hidden');
+                if (format_button) format_button.classList.add('hidden');
                 
                 // Update label to point to input
                 if (value_label) {
@@ -632,6 +666,7 @@ const PhlagManager = {
         const type_select = document.getElementById('type');
         const is_switch = (type_select && type_select.value === 'SWITCH');
         const is_string = (type_select && type_select.value === 'STRING');
+        const is_json = (type_select && type_select.value === 'JSON');
         
         this.environments.forEach(env => {
             const env_id = env.phlag_environment_id;
@@ -649,7 +684,7 @@ const PhlagManager = {
             let value = '';
             if (is_switch) {
                 value = value_select.value;
-            } else if (is_string) {
+            } else if (is_string || is_json) {
                 value = value_textarea.value;
             } else {
                 value = value_input.value;
@@ -667,6 +702,98 @@ const PhlagManager = {
         });
         
         return env_values;
+    },
+    
+    /**
+     * Validates JSON values in environment value textareas
+     * 
+     * Checks that all non-empty JSON values are valid JSON objects or arrays.
+     * Returns an error message if validation fails, or null if all values
+     * are valid.
+     * 
+     * @return {string|null} Error message if invalid, null if valid
+     * 
+     * @private
+     */
+    _validateJsonValues: function() {
+        const errors = [];
+        
+        this.environments.forEach(env => {
+            const env_id = env.phlag_environment_id;
+            const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
+            
+            if (!value_textarea || !value_textarea.value.trim()) {
+                return; // Skip empty values
+            }
+            
+            const value = value_textarea.value.trim();
+            
+            try {
+                const parsed = JSON.parse(value);
+                
+                // Check if it's an object or array (not primitive)
+                if (typeof parsed !== 'object' || parsed === null) {
+                    errors.push(`${env.name}: JSON must be an object or array (not a primitive)`);
+                }
+            } catch (e) {
+                errors.push(`${env.name}: Invalid JSON format - ${e.message}`);
+            }
+        });
+        
+        if (errors.length > 0) {
+            return 'Invalid JSON format:\n' + errors.join('\n');
+        }
+        
+        return null;
+    },
+    
+    /**
+     * Attaches click handler to format JSON button
+     * 
+     * Formats and validates JSON in the textarea. Shows validation errors
+     * if JSON is invalid or is a primitive type.
+     * 
+     * @param {HTMLElement} button - Format button element
+     * @param {HTMLTextAreaElement} textarea - Textarea containing JSON
+     * @param {string} env_name - Environment name for error messages
+     * 
+     * @private
+     */
+    _attachFormatButtonHandler: function(button, textarea, env_name) {
+        // Remove any existing listeners by cloning
+        const new_button = button.cloneNode(true);
+        button.parentNode.replaceChild(new_button, button);
+        
+        new_button.addEventListener('click', () => {
+            const value = textarea.value.trim();
+            
+            if (!value) {
+                UI.showMessage(`${env_name}: No JSON to format`, 'error');
+                return;
+            }
+            
+            try {
+                const parsed = JSON.parse(value);
+                
+                // Check if it's an object or array (not primitive)
+                if (typeof parsed !== 'object' || parsed === null) {
+                    UI.showMessage(`${env_name}: JSON must be an object or array (not a primitive)`, 'error');
+                    return;
+                }
+                
+                // Format with 2-space indentation
+                const formatted = JSON.stringify(parsed, null, 2);
+                textarea.value = formatted;
+                
+                // Trigger auto-grow to adjust height
+                textarea.style.height = 'auto';
+                textarea.style.height = textarea.scrollHeight + 'px';
+                
+                UI.showMessage(`${env_name}: JSON formatted successfully`, 'success');
+            } catch (e) {
+                UI.showMessage(`${env_name}: Invalid JSON - ${e.message}`, 'error');
+            }
+        });
     },
     
     /**
@@ -1512,13 +1639,14 @@ const PhlagManager = {
      * each environment that has a configured value.
      * 
      * @param {Array} env_values - Array of environment value objects
-     * @param {string} type - Flag type (SWITCH, INTEGER, FLOAT, STRING)
+     * @param {string} type - Flag type (SWITCH, INTEGER, FLOAT, STRING, JSON)
      * 
      * @private
      */
     _populateEnvironmentValues: function(env_values, type) {
         const is_switch = (type === 'SWITCH');
         const is_string = (type === 'STRING');
+        const is_json = (type === 'JSON');
         
         env_values.forEach(ev => {
             const env_id = ev.phlag_environment_id;
@@ -1535,7 +1663,7 @@ const PhlagManager = {
             // Set value in appropriate input
             if (is_switch && value_select) {
                 value_select.value = ev.value || '';
-            } else if (is_string && value_textarea) {
+            } else if ((is_string || is_json) && value_textarea) {
                 value_textarea.value = ev.value || '';
                 // Trigger auto-grow after setting value
                 this._setupAutoGrow(value_textarea);

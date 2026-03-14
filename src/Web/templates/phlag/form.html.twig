@@ -9,9 +9,9 @@
     </div>
 
     <form id="phlag-form" data-mode="{{ mode }}" {% if mode == 'edit' %}data-phlag-id="{{ phlag_id }}"{% endif %}>
-        
+
         <h2>Flag Definition</h2>
-        
+
         <div class="form-group">
             <label for="name">Name *</label>
             <input type="text" id="name" name="name" required maxlength="255"
@@ -35,8 +35,9 @@
                 <option value="INTEGER">INTEGER</option>
                 <option value="FLOAT">FLOAT</option>
                 <option value="STRING">STRING</option>
+                <option value="JSON">JSON</option>
             </select>
-            <span class="help-text">The data type for this flag's value. STRING supports up to 64KB of text including JSON and YAML.{% if mode == 'edit' %} <strong>Cannot be changed after creation.</strong>{% endif %}</span>
+            <span class="help-text">The data type for this flag's value. STRING supports up to ~4M characters. JSON parses and returns objects/arrays directly.{% if mode == 'edit' %} <strong>Cannot be changed after creation.</strong>{% endif %}</span>
         </div>
 
         <h2>Environment Values</h2>
@@ -68,15 +69,15 @@
     // Initialize phlag manager
     document.addEventListener('DOMContentLoaded', function() {
         PhlagManager.init('{{ api_url }}');
-        
+
         const form = document.getElementById('phlag-form');
         const mode = form.dataset.mode;
-        
+
         if (mode === 'edit') {
             const phlag_id = form.dataset.phlagId;
             PhlagManager.loadForEdit(phlag_id);
         }
-        
+
         PhlagManager.initForm();
     });
 </script>

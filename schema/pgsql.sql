@@ -1,6 +1,6 @@
 -- Phlag Complete Schema (PostgreSQL)
 
-CREATE TYPE phlag_type AS ENUM ('SWITCH', 'INTEGER', 'FLOAT', 'STRING');
+CREATE TYPE phlag_type AS ENUM ('SWITCH', 'INTEGER', 'FLOAT', 'STRING', 'JSON');
 
 CREATE TABLE phlags (
     phlag_id bigserial PRIMARY KEY,

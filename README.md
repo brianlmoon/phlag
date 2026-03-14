@@ -7,7 +7,7 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 
 ## Features
 
-- 🎯 **Typed Flags**: SWITCH (boolean), INTEGER, FLOAT, STRING (supports multi-line text, JSON, YAML)
+- 🎯 **Typed Flags**: SWITCH (boolean), INTEGER, FLOAT, STRING (supports multi-line text like YAML), JSON (parsed objects/arrays)
 - ⏰ **Temporal Control**: Schedule flags with start/end dates
 - 🌐 **Web Interface**: Clean admin UI for managing flags, API keys, and users
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
@@ -254,7 +254,9 @@ For other languages or custom integrations, use the Flag API endpoints directly 
 
 1. **Create a flag**: Navigate to "Flags" → "Create New Flag"
    - Name: Alphanumeric with underscores/hyphens (e.g., `feature_checkout`)
-   - Type: SWITCH, INTEGER, FLOAT, or STRING (STRING supports up to 64KB of text including JSON/YAML)
+   - Type: SWITCH, INTEGER, FLOAT, STRING, or JSON
+     - STRING: Supports up to ~4M characters (good for unstructured data, YAML, etc.)
+     - JSON: Parses and returns objects/arrays directly in API responses (good for structured configuration)
    - Value: Type-appropriate value
    - Optional: Set start/end dates for temporal control
 
@@ -449,7 +451,9 @@ false                   # SWITCH flag (inactive)
 100                     # INTEGER flag
 3.14                    # FLOAT flag
 "welcome message"       # STRING flag (simple text)
-"{\"key\":\"value\"}"   # STRING flag (JSON)
+"{\"key\":\"value\"}"   # STRING flag (JSON as string)
+{"key": "value"}        # JSON flag (parsed object)
+["item1", "item2"]      # JSON flag (parsed array)
 null                    # Inactive or non-existent flag
 ```
 
@@ -468,7 +472,8 @@ Response:
   "feature_checkout": true,
   "max_items": 100,
   "price_multiplier": 1.5,
-  "welcome_message": "Hello World"
+  "welcome_message": "Hello World",
+  "api_config": {"endpoint": "https://api.example.com", "timeout": 30}
 }
 ```
 
@@ -511,7 +516,7 @@ Flags can be scheduled to activate/deactivate automatically:
 
 **Behavior when inactive:**
 - SWITCH flags return `false`
-- INTEGER/FLOAT/STRING flags return `null`
+- INTEGER/FLOAT/STRING/JSON flags return `null`
 
 ## Application Architecture
 
@@ -631,6 +636,25 @@ CREATE INDEX IF NOT EXISTS idx_webhook_active ON phlag_webhooks(is_active);
 ```
 
 After running the migration, webhooks will automatically fire when flags change. Configure your first webhook via the admin UI at `/webhooks`.
+
+#### Upgrading to v1.2.0 (JSON Type Feature)
+
+If you're upgrading from a version before JSON type support was added:
+
+**All changes are documented in:** `schema/migrations/add_json_type.md`
+
+Quick summary for MySQL:
+```sql
+-- Add JSON to type enum
+ALTER TABLE `phlags` 
+MODIFY COLUMN `type` enum('SWITCH','INTEGER','FLOAT','STRING','JSON') NOT NULL;
+
+-- Update value column for better utf8mb4 support
+ALTER TABLE `phlag_environment_values`
+MODIFY COLUMN `value` mediumtext;
+```
+
+PostgreSQL and SQLite migrations are also detailed in the migration file.
 
 ### Adding New Features
 

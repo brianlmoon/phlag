@@ -1441,6 +1441,17 @@ table td.hide-mobile:nth-child(5) {
     overflow-y: hidden;
 }
 
+/* Textarea with format button wrapper */
+.textarea-with-button {
+    position: relative;
+}
+
+.btn-format-json {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
 /* Event type checkboxes */
 .checkbox-group {
     display: flex;
