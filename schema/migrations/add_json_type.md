@@ -19,7 +19,7 @@ MODIFY COLUMN `value` mediumtext;
 
 ## PostgreSQL
 
-**Note**: PostgreSQL doesn't support adding values to existing ENUMs directly. Use this approach:
+**Note**: On PostgreSQL 9.1+ you can add new values to an existing ENUM type directly with `ALTER TYPE ... ADD VALUE`. If you need the new value to appear in a specific sort order relative to existing values, you must instead recreate the type as shown in Option 2.
 
 ```sql
 -- Option 1: Add value to existing type (PostgreSQL 9.1+)
@@ -33,6 +33,10 @@ DROP TYPE phlag_type;
 CREATE TYPE phlag_type AS ENUM ('SWITCH', 'INTEGER', 'FLOAT', 'STRING', 'JSON');
 ALTER TABLE phlags ALTER COLUMN type TYPE phlag_type USING type::phlag_type;
 COMMIT;
+
+-- Update value column to TEXT to support larger JSON payloads
+ALTER TABLE phlag_environment_values
+    ALTER COLUMN value TYPE text;
 ```
 
 **Recommendation**: Use Option 1 (simpler, no downtime).
