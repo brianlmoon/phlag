@@ -7,7 +7,7 @@ type-safe values. Built with PHP 8.4+, it provides both a web UI for management 
 
 ## Features
 
-- 🎯 **Typed Flags**: SWITCH (boolean), INTEGER, FLOAT, STRING
+- 🎯 **Typed Flags**: SWITCH (boolean), INTEGER, FLOAT, STRING (supports multi-line text, JSON, YAML)
 - ⏰ **Temporal Control**: Schedule flags with start/end dates
 - 🌐 **Web Interface**: Clean admin UI for managing flags, API keys, and users
 - 🔑 **Auto-generated API Keys**: 64-character cryptographically secure keys
@@ -254,7 +254,7 @@ For other languages or custom integrations, use the Flag API endpoints directly 
 
 1. **Create a flag**: Navigate to "Flags" → "Create New Flag"
    - Name: Alphanumeric with underscores/hyphens (e.g., `feature_checkout`)
-   - Type: SWITCH, INTEGER, FLOAT, or STRING
+   - Type: SWITCH, INTEGER, FLOAT, or STRING (STRING supports up to 64KB of text including JSON/YAML)
    - Value: Type-appropriate value
    - Optional: Set start/end dates for temporal control
 
@@ -448,7 +448,8 @@ true                    # SWITCH flag (active)
 false                   # SWITCH flag (inactive)
 100                     # INTEGER flag
 3.14                    # FLOAT flag
-"welcome message"       # STRING flag
+"welcome message"       # STRING flag (simple text)
+"{\"key\":\"value\"}"   # STRING flag (JSON)
 null                    # Inactive or non-existent flag
 ```
 
