@@ -430,7 +430,7 @@ const PhlagManager = {
             <h3>${this._escapeHtml(env.name)}</h3>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="env_value_${env_id}">Value</label>
+                    <label id="env_value_label_${env_id}" for="env_value_${env_id}">Value</label>
                     <input type="text" id="env_value_${env_id}" class="env-value-input" placeholder="Leave empty to not configure">
                     <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
                     <select id="env_value_select_${env_id}" class="env-value-select hidden">
@@ -498,6 +498,7 @@ const PhlagManager = {
         
         this.environments.forEach(env => {
             const env_id = env.phlag_environment_id;
+            const value_label = document.getElementById(`env_value_label_${env_id}`);
             const value_input = document.getElementById(`env_value_${env_id}`);
             const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
@@ -512,6 +513,11 @@ const PhlagManager = {
                 value_textarea.classList.add('hidden');
                 value_select.classList.remove('hidden');
                 
+                // Update label to point to select
+                if (value_label) {
+                    value_label.setAttribute('for', `env_value_select_${env_id}`);
+                }
+                
                 // Transfer value if it exists
                 if (value_input.value === 'true' || value_input.value === 'false') {
                     value_select.value = value_input.value;
@@ -523,6 +529,11 @@ const PhlagManager = {
                 value_input.classList.add('hidden');
                 value_select.classList.add('hidden');
                 value_textarea.classList.remove('hidden');
+                
+                // Update label to point to textarea
+                if (value_label) {
+                    value_label.setAttribute('for', `env_value_textarea_${env_id}`);
+                }
                 
                 // Transfer value if it exists
                 if (value_input.value) {
@@ -541,6 +552,11 @@ const PhlagManager = {
                 value_select.classList.add('hidden');
                 value_textarea.classList.add('hidden');
                 value_input.classList.remove('hidden');
+                
+                // Update label to point to input
+                if (value_label) {
+                    value_label.setAttribute('for', `env_value_${env_id}`);
+                }
                 
                 // Transfer value if it exists
                 if (value_select.value && value_select.value !== '') {
@@ -569,18 +585,31 @@ const PhlagManager = {
      * Sets up auto-grow functionality for a textarea
      * 
      * Adjusts textarea height automatically as content is added or removed.
+     * This method is idempotent - calling it multiple times on the same
+     * textarea will not add duplicate event listeners.
      * 
      * @param {HTMLTextAreaElement} textarea - The textarea element
      * 
      * @private
      */
     _setupAutoGrow: function(textarea) {
+        // Guard: only set up once per textarea
+        if (textarea.dataset.autoGrowEnabled === 'true') {
+            // Already configured, just adjust height
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            return;
+        }
+        
         const adjustHeight = function() {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         };
         
-        // Adjust on input
+        // Mark as configured to prevent duplicate listeners
+        textarea.dataset.autoGrowEnabled = 'true';
+        
+        // Attach event listener
         textarea.addEventListener('input', adjustHeight);
         
         // Initial adjustment
