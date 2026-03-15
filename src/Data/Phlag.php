@@ -18,7 +18,7 @@ namespace Moonspot\Phlag\Data;
  * - **phlag_id**: Unique identifier for this flag
  * - **name**: Unique name used to reference this flag in API calls
  * - **description**: Optional human-readable description
- * - **type**: Flag type (SWITCH, INTEGER, FLOAT, STRING) - REQUIRED
+ * - **type**: Flag type (SWITCH, INTEGER, FLOAT, STRING, JSON) - REQUIRED
  * - **create_datetime**: When this flag was created
  * - **update_datetime**: When this flag was last updated
  *
@@ -73,7 +73,7 @@ class Phlag extends \Moonspot\ValueObjects\ValueObject {
      * Flag type
      *
      * Determines how the value is interpreted and cast.
-     * Valid values: SWITCH, INTEGER, FLOAT, STRING
+     * Valid values: SWITCH, INTEGER, FLOAT, STRING, JSON
      * This field is REQUIRED (NOT NULL).
      *
      * @var string

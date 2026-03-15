@@ -1,7 +1,7 @@
 # Phlag - AI Agent Quick Reference
 
 ## What It Is
-Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Manages typed flags (SWITCH, INTEGER, FLOAT, STRING) with temporal scheduling.
+Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Manages typed flags (SWITCH, INTEGER, FLOAT, STRING, JSON) with temporal scheduling.
 
 ## Stack
 - **Backend**: PHP 8.0+, Twig 3.x, PageMill Router, DealNews DataMapper
@@ -11,18 +11,22 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 ## Key Architecture
 
 ### Data Layer
-- **Value Objects**: `Phlag`, `PhlagApiKey`, `PhlagUser`, `GoogleUser` (in `src/Data/`)
-- **Mappers**: Auto-generate API keys (64-char), hash passwords (bcrypt)
+- **Value Objects**: `Phlag`, `PhlagApiKey`, `PhlagUser`, `GoogleUser`, `PasswordResetToken`, `PhlagSession`, `PhlagWebhook`, `PhlagEnvironment`, `PhlagEnvironmentValue`, `PhlagApiKeyEnvironment` (in `src/Data/`)
+- **Mappers**: Auto-generate API keys (64-char), hash passwords (bcrypt), validate webhooks
 - **Repository**: Singleton with `init()`, auto-registers mappers
 
 ### Action Layer (Custom Endpoints)
-- **FlagValueTrait**: Shared temporal logic + type casting
-- **GetPhlagState** (`/flag/{name}`): Single flag value (typed scalar)
-- **GetAllFlags** (`/all-flags`): All flags as key-value object
+- **FlagValueTrait**: Shared temporal logic + type casting (including JSON parsing)
+- **ApiKeyAuthTrait**: Bearer token validation for flag API endpoints
+- **GetPhlagState** (`/flag/{name}`): Single flag value (typed scalar or JSON object/array)
+- **GetAllFlags** (`/all-flags`): All flags as key-value object (JSON parsed)
 - **GetFlags** (`/get-flags`): All flags with metadata (ISO 8601 dates)
+- **PhlagWebhook/Test** (`/webhook/test/{id}`): Test webhook delivery
 
 ### Web Layer
-- **Controllers**: BaseController (auth/CSRF), Auth, Phlag, ApiKey, User
+- **Controllers**: BaseController (auth/CSRF), Auth, Phlag, ApiKey, User, Environment, PhlagWebhook, Home
+- **Services**: WebhookDispatcher (HTTP POST with retry), EmailService (password reset), GoogleOAuthService (SSO)
+- **Security**: CsrfToken (256-bit tokens), SessionManager (timeout handling), DatabaseSessionHandler (multi-instance)
 - **Templates**: Twig in `src/Web/templates/`
 - **JavaScript**: `app.js` (ApiClient, utils), `phlag.js`, `api_key.js`, `user.js`
 
@@ -56,16 +60,19 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 
 ### Admin API (Session Auth Required)
 ```
-GET/POST/PUT/DELETE /api/Phlag/         # CRUD for flags
-GET/POST/PUT/DELETE /api/PhlagApiKey/   # CRUD for API keys
-GET/POST/PUT/DELETE /api/PhlagUser/     # CRUD for users
+GET/POST/PUT/DELETE /api/Phlag/                # CRUD for flags
+GET/POST/PUT/DELETE /api/PhlagApiKey/          # CRUD for API keys
+GET/POST/PUT/DELETE /api/PhlagUser/            # CRUD for users
+GET/POST/PUT/DELETE /api/PhlagEnvironment/     # CRUD for environments
+GET/POST/PUT/DELETE /api/PhlagWebhook/         # CRUD for webhooks
+POST                /webhook/test/{id}          # Test webhook delivery
 ```
 **Important**: Trailing slashes required, returns 401 if not logged in
 
 ### Flag State API (Bearer Auth Required)
 ```
-GET /flag/{name}      # Returns: true, 100, 1.5, "text", false, or null
-GET /all-flags        # Returns: {"flag1": true, "flag2": 100, ...}
+GET /flag/{name}      # Returns: true, 100, 1.5, "text", {obj}, [arr], false, or null
+GET /all-flags        # Returns: {"flag1": true, "flag2": {"key": "val"}, ...}
 GET /get-flags        # Returns: [{name, type, value, start, end}, ...]
 ```
 **Trailing slash optional**
@@ -77,25 +84,32 @@ Flag is **active** when:
 
 **Inactive behavior**:
 - SWITCH → `false`
-- INTEGER/FLOAT/STRING → `null`
+- INTEGER/FLOAT/STRING/JSON → `null`
 
 ### Type Casting
 - SWITCH → boolean
 - INTEGER → int
 - FLOAT → float
 - STRING → string (no casting)
+- JSON → object or array (parsed from JSON string)
 
 ## Database Schema
 
 ### Tables (all prefixed `phlag_`)
-- **phlags**: `phlag_id`, name, type, value, start_datetime, end_datetime
-- **phlag_api_keys**: `plag_api_key_id`, description, api_key (64 chars)
-- **phlag_users**: `phlag_user_id`, username, full_name, password (bcrypt), google_id
+- **phlags**: `phlag_id`, name, type (ENUM: SWITCH/INTEGER/FLOAT/STRING/JSON), description, create_datetime, update_datetime
+- **phlag_environments**: `phlag_environment_id`, name, description, create_datetime, update_datetime
+- **phlag_environment_values**: `phlag_environment_value_id`, phlag_id, phlag_environment_id, value (MEDIUMTEXT), start_datetime, end_datetime
+- **phlag_api_keys**: `plag_api_key_id`, description, api_key (64 chars), create_datetime
+- **phlag_api_key_environments**: `phlag_api_key_environment_id`, plag_api_key_id, phlag_environment_id
+- **phlag_users**: `phlag_user_id`, username, full_name, email, password (bcrypt), google_id, create_datetime, update_datetime
 - **phlag_sessions**: `session_id`, session_data, last_activity, create_datetime
+- **phlag_password_reset_tokens**: `password_reset_token_id`, phlag_user_id, token (64 chars), expiration_datetime, create_datetime
+- **phlag_webhooks**: `phlag_webhook_id`, name, url, is_active, headers_json, payload_template, event_types_json, include_environment_changes, create_datetime, update_datetime
 
 ### Naming Convention
 - Primary keys: `{table_name}_id`
 - Sort order: Alphabetical by name (A-Z)
+- Foreign keys: Cascade on delete where appropriate
 
 ## Security Features
 
@@ -106,10 +120,28 @@ Flag is **active** when:
 ✅ **Session Storage**: Database-backed sessions for multi-instance support  
 ✅ **XSS**: HTML escaping in templates and JS  
 ✅ **Google OAuth**: Optional SSO with domain restrictions  
+✅ **Webhook Validation**: URL format, HTTPS requirement (except localhost), private IP blocking  
+
+## Exception Handling
+
+### Common Exceptions
+
+**InvalidArgumentException** (validation errors):
+- `PhlagEnvironmentValue`: "Invalid JSON format" / "JSON must be an object or array"
+- `PhlagWebhook`: "URL is required" / "URL is not valid" / "URL must use HTTPS" / "URL points to private IP address" / "Event types are required" / "Event types must be JSON array" / "Headers must be JSON object"
+
+**RuntimeException** (operational errors):
+- `WebhookDispatcher`: "curl_init failed" / "Webhook request failed: {error}"
+- `PhlagSession`: "Session data exceeds maximum size"
+
+**Best Practices**:
+- Always catch `\Throwable` not `\Exception`
+- Log exceptions but don't expose internals to users
+- Webhook failures should never block save operations (fail-safe design)  
 
 ## Testing
 
-**Suite**: 189 tests, 100% pass rate
+**Suite**: 221 tests, 100% pass rate
 
 ```bash
 ./vendor/bin/phpunit                    # Run all tests
@@ -118,14 +150,19 @@ Flag is **active** when:
 ```
 
 **Coverage**:
-- `FlagValueTraitTest.php` (21 tests) - Temporal + type casting
+- `FlagValueTraitTest.php` (29 tests) - Temporal + type casting + JSON parsing
 - `GetPhlagStateTest.php` (15 tests) - Single flag endpoint
 - `GetAllFlagsTest.php` (10 tests) - Bulk flag endpoint
 - `GetFlagsTest.php` (14 tests) - Detailed flag endpoint
+- `ApiKeyAuthTraitTest.php` (20 tests) - Bearer token authentication
 - `CsrfTokenTest.php` (17 tests) - CSRF protection
 - `SessionManagerTest.php` (21 tests) - Session timeout and lifecycle
 - `DatabaseSessionHandlerTest.php` (16 tests) - Database session storage
 - `GoogleOAuthServiceTest.php` (24 tests) - Google OAuth service
+- `EmailServiceTest.php` (19 tests) - Email sending and token generation
+- `PasswordResetTokenTest.php` (11 tests) - Token generation and expiration
+- `PhlagWebhookMapperTest.php` (12 tests) - Webhook URL and JSON validation
+- `WebhookDispatcherTest.php` (13 tests) - Webhook HTTP delivery and retry logic
 
 **Testing with Mocks**:
 Tests avoid database dependencies by using PHPUnit mocks:
@@ -207,7 +244,8 @@ public function example(int $foo, string $bar): ?ValueObj {
 - SWITCH → select (true/false)
 - INTEGER → number input (step="1")
 - FLOAT → number input (step="any")
-- STRING → text input
+- STRING → textarea (auto-grow, monospace font, 1M char limit)
+- JSON → textarea (auto-grow, monospace font, 1M char limit) with "Format JSON" button
 
 ### Flag Name Validation
 - Pattern: `[a-zA-Z0-9_-]+`
@@ -242,6 +280,12 @@ public function example(int $foo, string $bar): ?ValueObj {
 17. **INI boolean parsing** - PHP's `parse_ini_file()` converts `true` to `"1"`, not `"true"`; check for both values
 18. **Google OAuth config** - Set `google_oauth.enabled`, `google_oauth.client_id`, `google_oauth.client_secret`, `google_oauth.redirect_uri`
 19. **OAuth user linking** - Links by `google_id` first, then by email match; generates random password for OAuth-only accounts
+20. **Repository singleton** - Use `Repository::init()` not `Repository::get()` to access singleton instance
+21. **JSON validation** - Server-side enforces objects/arrays only (no primitives); client validates before submit
+22. **Value storage** - MEDIUMTEXT supports ~4M characters with utf8mb4 encoding (16MB storage)
+23. **Webhook retry** - Failed webhooks retry with exponential backoff; failures never block save operations
+24. **Event types** - Webhooks support: created, updated, deleted, environment_value_updated events
+25. **Textarea auto-grow** - Made idempotent with `data-auto-grow-enabled` flag to prevent duplicate listeners
 
 ## File Locations
 
@@ -272,18 +316,21 @@ public function example(int $foo, string $bar): ?ValueObj {
 
 ## Current Status
 
-**Version**: 1.5.0 (Production Ready)
+**Version**: 1.1.0 → 1.2.0 (Next Release)
 
 **Complete**:
 ✅ Core phlag management (CRUD)  
+✅ Multi-environment support  
 ✅ API key management (auto-gen, masking)  
 ✅ User authentication (session-based)  
 ✅ CSRF protection  
 ✅ Bearer token API auth  
 ✅ Custom flag endpoints (3)  
 ✅ Temporal constraints  
-✅ Type-safe values  
-✅ Test suite (189 tests)  
+✅ Type-safe values (SWITCH, INTEGER, FLOAT, STRING, JSON)  
+✅ JSON type (parsed objects/arrays)  
+✅ Webhooks (HTTP POST with retry logic)  
+✅ Test suite (221 tests)  
 ✅ Comprehensive docs  
 ✅ BSD 3-Clause license  
 ✅ Session timeout (30-min inactivity)  
@@ -295,6 +342,7 @@ public function example(int $foo, string $bar): ?ValueObj {
 - Audit logging
 - User roles/permissions
 - Rate limiting
+- Webhook signature verification
 
 ### Add New Flag
 ```bash
@@ -394,6 +442,50 @@ CREATE UNIQUE INDEX phlag_users_google_id ON phlag_users(google_id);
 - **Modal won't close**: Check CSS `.modal.hidden` specificity
 - **Footer spacing**: Ensure `footer.container` selector used
 - **Google button not showing**: Check `google_oauth.enabled = true` in config (INI parses `true` as `"1"`)
+- **JSON validation error**: Ensure JSON is object/array, not primitive (string/number/boolean/null)
+- **Webhook not firing**: Check webhook is active, event type matches, and URL is accessible
+- **Repository error**: Use `Repository::init()` not `Repository::get()` for singleton access
+- **MEDIUMTEXT size**: Value column supports ~4M characters with utf8mb4, UI limit is 1M characters
+
+## Webhook System
+
+### Configuration
+Webhooks send HTTP POST notifications when flags change:
+
+**Event Types**:
+- `created` - New flag created
+- `updated` - Flag metadata updated (name, description, type)
+- `deleted` - Flag deleted
+- `environment_value_updated` - Flag value changed in any environment (requires `include_environment_changes: true`)
+
+**Payload**:
+```json
+{
+  "event": "updated",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "phlag": {
+    "phlag_id": 1,
+    "name": "feature_checkout",
+    "type": "SWITCH",
+    "description": "Enable checkout flow"
+  },
+  "environments": [
+    {"name": "production", "value": "true"},
+    {"name": "staging", "value": "false"}
+  ]
+}
+```
+
+**Retry Logic**:
+- 3 attempts with exponential backoff (0s, 2s, 4s)
+- Failures logged but never block save operations
+- HTTP 2xx status codes considered success
+
+**Security**:
+- HTTPS required (except localhost for development)
+- Private IP addresses blocked (prevents SSRF attacks)
+- Custom headers supported for authentication
+- Payload template supports variable substitution
 
 ## License
 BSD 3-Clause (Brian Moon, 2025)

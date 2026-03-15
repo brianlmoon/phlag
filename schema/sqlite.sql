@@ -4,7 +4,7 @@ CREATE TABLE phlags (
     phlag_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     description TEXT DEFAULT NULL,
-    type TEXT NOT NULL CHECK(type IN ('SWITCH', 'INTEGER', 'FLOAT', 'STRING')),
+    type TEXT NOT NULL CHECK(type IN ('SWITCH', 'INTEGER', 'FLOAT', 'STRING', 'JSON')),
     create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
     update_datetime TEXT DEFAULT NULL
 );

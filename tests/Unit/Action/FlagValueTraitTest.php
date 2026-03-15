@@ -329,4 +329,122 @@ class FlagValueTraitTest extends TestCase {
 
         $this->assertSame('test', $result);
     }
+
+    /**
+     * Tests casting JSON type with valid object
+     */
+    public function testCastValueJsonObject(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '{"key": "value", "number": 42}';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertIsObject($result);
+        $this->assertSame('value', $result->key);
+        $this->assertSame(42, $result->number);
+    }
+
+    /**
+     * Tests casting JSON type with valid array
+     */
+    public function testCastValueJsonArray(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '["item1", "item2", "item3"]';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertIsArray($result);
+        $this->assertCount(3, $result);
+        $this->assertSame('item1', $result[0]);
+        $this->assertSame('item2', $result[1]);
+        $this->assertSame('item3', $result[2]);
+    }
+
+    /**
+     * Tests casting JSON type with nested structure
+     */
+    public function testCastValueJsonNested(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '{"user": {"name": "John", "age": 30}, "active": true}';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertIsObject($result);
+        $this->assertIsObject($result->user);
+        $this->assertSame('John', $result->user->name);
+        $this->assertSame(30, $result->user->age);
+        $this->assertTrue($result->active);
+    }
+
+    /**
+     * Tests casting JSON type with empty object
+     */
+    public function testCastValueJsonEmptyObject(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '{}';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertIsObject($result);
+        $this->assertEmpty(get_object_vars($result));
+    }
+
+    /**
+     * Tests casting JSON type with empty array
+     */
+    public function testCastValueJsonEmptyArray(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '[]';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    /**
+     * Tests casting JSON type with invalid JSON returns null
+     */
+    public function testCastValueJsonInvalid(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '{invalid json}';
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests casting JSON type with malformed JSON returns null
+     */
+    public function testCastValueJsonMalformed(): void {
+        $trait_user = $this->getTraitUser();
+        $json = '{"key": "value"';  // Missing closing brace
+
+        $result = $trait_user->testCastValue($json, 'JSON');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests casting JSON type with null value returns null
+     */
+    public function testCastValueJsonNull(): void {
+        $trait_user = $this->getTraitUser();
+
+        $result = $trait_user->testCastValue(null, 'JSON');
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests getInactiveValue for JSON type returns null
+     */
+    public function testGetInactiveValueJson(): void {
+        $trait_user = $this->getTraitUser();
+
+        $result = $trait_user->testGetInactiveValue('JSON');
+
+        $this->assertNull($result);
+    }
 }
