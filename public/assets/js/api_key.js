@@ -111,19 +111,31 @@ const ApiKeyManager = {
     /**
      * Loads a single API key for viewing
      * 
+     * Loads the API key details along with environment assignments and
+     * all available environments to display which environments this key
+     * can access.
+     * 
      * @param {number} id - API Key ID to load
      */
     loadSingle: function(id) {
         UI.showLoading();
         
-        this.api.get('/PhlagApiKey/' + id + '/')
-            .then(api_key => {
+        // Load environments first, then API key and assignments in parallel
+        this.loadEnvironments()
+            .then(() => {
+                return Promise.all([
+                    this.api.get('/PhlagApiKey/' + id + '/'),
+                    this.loadEnvironmentAssignments(id)
+                ]);
+            })
+            .then(([api_key, assignments]) => {
                 UI.hideLoading();
                 
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('api-key-details').classList.remove('hidden');
                 
                 this._populateDetails(api_key);
+                this._displayEnvironmentAssignments(assignments);
             })
             .catch(error => {
                 UI.hideLoading();
@@ -269,17 +281,29 @@ const ApiKeyManager = {
     /**
      * Loads environment assignments for an API key
      * 
-     * Makes a POST request to /api/PhlagApiKeyEnvironment/_search/ to find
-     * all environment assignments for the specified API key.
+     * Makes a GET request to /api/PhlagApiKeyEnvironment and filters
+     * client-side for the specific API key. Returns all environment
+     * assignments for the given key.
+     * 
+     * Note: Changed from POST /_search/ to GET with filter parameter
+     * due to issues with the search API returning incorrect results.
+     * The search endpoint was returning ALL assignments instead of just
+     * those for the specified API key, causing environment assignments
+     * for other keys to be deleted when updating a single key.
      * 
      * @param {number} api_key_id - API key ID to load assignments for
      * 
      * @return {Promise} Resolves with array of assignment objects
      */
     loadEnvironmentAssignments: function(api_key_id) {
-        return this.api.post('/PhlagApiKeyEnvironment/_search/', {
-            plag_api_key_id: parseInt(api_key_id)
-        });
+        // Use GET with filtering instead of _search endpoint
+        return this.api.get('/PhlagApiKeyEnvironment/')
+            .then(all_assignments => {
+                // Filter client-side for the specific api_key_id
+                return all_assignments.filter(assignment => 
+                    assignment.plag_api_key_id === parseInt(api_key_id)
+                );
+            });
     },
     
     /**
@@ -446,6 +470,44 @@ const ApiKeyManager = {
         document.getElementById('detail-description').textContent = api_key.description;
         document.getElementById('detail-api-key').textContent = this._maskApiKey(api_key.api_key);
         document.getElementById('detail-created').textContent = this._formatDate(api_key.create_datetime);
+    },
+    
+    /**
+     * Displays environment assignments for an API key
+     * 
+     * Shows which environments this API key can access. If no assignments
+     * exist, displays "Unrestricted (All Environments)" message. Otherwise,
+     * shows a list of assigned environment names sorted alphabetically.
+     * 
+     * @param {Array} assignments - Array of environment assignment objects
+     * @private
+     */
+    _displayEnvironmentAssignments: function(assignments) {
+        const container = document.getElementById('environment-assignments-display');
+        
+        if (!assignments || assignments.length === 0) {
+            // No assignments = unrestricted access
+            container.innerHTML = '<p class="alert alert-success"><strong>Unrestricted Access:</strong> This API key can access all environments.</p>';
+            return;
+        }
+        
+        // Get environment names for assigned IDs
+        const assigned_env_ids = assignments.map(a => a.phlag_environment_id);
+        const assigned_envs = this.environments.filter(env => 
+            assigned_env_ids.includes(env.phlag_environment_id)
+        );
+        
+        // Sort alphabetically by name
+        assigned_envs.sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Build HTML list
+        let html = '<p><strong>Restricted to:</strong></p><ul class="environment-list">';
+        assigned_envs.forEach(env => {
+            html += `<li>${this._escapeHtml(env.name)}</li>`;
+        });
+        html += '</ul>';
+        
+        container.innerHTML = html;
     },
     
     /**

@@ -82,6 +82,9 @@ const EnvironmentManager = {
                     return;
                 }
                 
+                // Sort environments alphabetically by name
+                data.sort((a, b) => a.name.localeCompare(b.name));
+                
                 // Populate table with environments
                 data.forEach(environment => {
                     const row = this._createTableRow(environment);
@@ -304,7 +307,6 @@ const EnvironmentManager = {
      * @private
      */
     _populateDetails: function(environment) {
-        document.getElementById('detail-id').textContent = environment.phlag_environment_id;
         document.getElementById('detail-name').textContent = environment.name;
         document.getElementById('detail-created').textContent = this._formatDate(environment.create_datetime);
         document.getElementById('detail-updated').textContent = this._formatDate(environment.update_datetime);
