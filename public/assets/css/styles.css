@@ -728,6 +728,24 @@ table td.hide-mobile:nth-child(5) {
     grid-column: span 1;
 }
 
+/* Simple detail grid for views with fewer items */
+.detail-grid-simple {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.detail-grid-simple .detail-item:nth-child(1) {
+    grid-column: 1 / 4;
+}
+
+.detail-grid-simple .detail-item:nth-child(2),
+.detail-grid-simple .detail-item:nth-child(3),
+.detail-grid-simple .detail-item:nth-child(4),
+.detail-grid-simple .detail-item:nth-child(5) {
+    grid-column: span 1;
+}
+
 /* Mobile: stack all items vertically */
 @media (max-width: 768px) {
     .detail-grid {
@@ -739,6 +757,18 @@ table td.hide-mobile:nth-child(5) {
     .detail-item:nth-child(3),
     .detail-item:nth-child(4),
     .detail-item:nth-child(5) {
+        grid-column: 1;
+    }
+    
+    .detail-grid-simple {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-grid-simple .detail-item:nth-child(1),
+    .detail-grid-simple .detail-item:nth-child(2),
+    .detail-grid-simple .detail-item:nth-child(3),
+    .detail-grid-simple .detail-item:nth-child(4),
+    .detail-grid-simple .detail-item:nth-child(5) {
         grid-column: 1;
     }
 }
