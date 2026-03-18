@@ -1678,6 +1678,7 @@ const PhlagManager = {
             env_value_map[ev.phlag_environment_id] = ev;
         });
         
+        const now = new Date();
         environments.forEach(env => {
             const env_value = env_value_map[env.phlag_environment_id];
             let value_display = '';
@@ -1687,7 +1688,6 @@ const PhlagManager = {
                 value_display = `<span class="env-value env-not-set"><strong>${this._escapeHtml(env.name)}:</strong> <em>—</em></span>`;
             } else {
                 // Determine temporal status first
-                const now = new Date();
                 let is_expired = false;
                 let is_scheduled = false;
                 
