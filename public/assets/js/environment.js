@@ -174,6 +174,13 @@ const EnvironmentManager = {
             const mode = form.dataset.mode;
             const form_data = FormUtils.serialize(form);
             
+            // Explicitly set is_important to 1 or 0 based on checkbox state
+            // (FormData omits unchecked checkboxes, which can cause inconsistent behavior)
+            const is_important_checkbox = document.getElementById('is_important');
+            if (is_important_checkbox) {
+                form_data.is_important = is_important_checkbox.checked ? 1 : 0;
+            }
+            
             if (mode === 'create') {
                 this.create(form_data);
             } else if (mode === 'edit') {
