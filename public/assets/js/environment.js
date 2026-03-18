@@ -311,6 +311,14 @@ const EnvironmentManager = {
      */
     _populateForm: function(environment) {
         document.getElementById('name').value = environment.name || '';
+        
+        // Set checkbox state for is_important
+        const is_important_checkbox = document.getElementById('is_important');
+        if (is_important_checkbox) {
+            is_important_checkbox.checked = environment.is_important === true ||
+                                           environment.is_important === 1 ||
+                                           environment.is_important === '1';
+        }
     },
     
     /**

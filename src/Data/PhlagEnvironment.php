@@ -58,6 +58,18 @@ class PhlagEnvironment extends \Moonspot\ValueObjects\ValueObject {
     public int $sort_order = 0;
 
     /**
+     * Marks environment as important for flag list display
+     *
+     * Important environments always show on the flag list page, regardless
+     * of total environment count. Use this to prioritize critical environments
+     * like production. When false, the environment is hidden behind "View
+     * Details" when more than 3 total environments exist.
+     *
+     * @var bool
+     */
+    public bool $is_important = false;
+
+    /**
      * When this environment was created
      *
      * Set automatically by the database.

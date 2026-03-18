@@ -267,6 +267,32 @@ For other languages or custom integrations, use the Flag API endpoints directly 
 3. **Add users**: Navigate to "Users" → "Create New User"
    - Provide username, full name, email, password
 
+### Managing Environments
+
+Environments represent different deployment contexts where flags can have different values (e.g., production, staging, development).
+
+#### Creating Environments
+
+1. Navigate to "Environments" → "Create New Environment"
+2. Configure the environment:
+   - **Name**: Descriptive name (e.g., "Production", "Staging")
+   - **Mark as Important**: Check to always show this environment on flag list
+     - Important environments display inline on the flag list page
+     - Non-important environments are hidden when >3 total environments exist
+     - Use this to prioritize critical environments like production
+
+#### Display Logic
+
+The flag list page adapts its display based on environment configuration:
+
+| Total Environments | Important Marked | Display Behavior |
+|--------------------|------------------|------------------|
+| ≤3 | Any | All environments shown inline |
+| >3 | None | No environment values shown (click flag name to see details) |
+| >3 | One or more | Important environments shown inline only |
+
+**Example**: With 10 environments, mark "Production" and "Staging" as important to see only those values on the flag list. Click any flag name to see all environment values on the detail page.
+
 ### Configuring Webhooks
 
 Webhooks notify external systems when flags change by sending HTTP POST requests with customizable payloads.

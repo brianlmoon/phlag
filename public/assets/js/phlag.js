@@ -1345,26 +1345,23 @@ const PhlagManager = {
      * Builds a complete table row with all phlag data including
      * status badge and action buttons. The ID column is not included
      * in the display.
-     * 
-     * @param {object} phlag - Phlag object with all properties
-     * 
-     * @return {HTMLElement} Table row element ready to append
-     * 
-     * @private
-     */
     /**
      * Creates a table row for a phlag
      * 
-     * Builds a complete table row with all phlag data. When 3 or fewer
-     * environments exist, displays environment values inline. Otherwise,
-     * shows "View Details" link.
+     * Builds a complete table row with all phlag data. The environment
+     * display logic adapts based on total count and importance:
      * 
-     * ## Enhanced Display (v2.0+)
+     * ## Display Logic (v2.1+)
      * 
-     * The Environments column adaptively shows:
-     * - Inline values with badges when ≤3 environments configured
-     * - "View Details" link when >3 environments configured
-     * - Properly handles temporal constraints (start/end dates)
+     * The Environments column shows:
+     * - **≤3 environments**: All environments inline with values
+     * - **>3 environments, some important**: Only important environments inline
+     * - **>3 environments, none important**: Em dash (—)
+     * 
+     * Important environments (is_important=true) always display on the
+     * flag list, allowing users to prioritize critical environments like
+     * production. Users can click the flag name to see all environment values.
+     * Properly handles temporal constraints (start/end dates).
      * 
      * @param {object} phlag - Phlag object with all properties
      * @param {Array} env_values - Array of environment value objects for this flag
@@ -1385,82 +1382,31 @@ const PhlagManager = {
         if (this.environments.length === 0) {
             environments_html = '<em>No environments</em>';
         } else if (this.environments.length <= 3) {
-            // Show inline values for each environment
-            const env_displays = [];
-            
-            // Create a map of environment values by environment ID
-            const env_value_map = {};
-            env_values.forEach(ev => {
-                env_value_map[ev.phlag_environment_id] = ev;
-            });
-            
-            this.environments.forEach(env => {
-                const env_value = env_value_map[env.phlag_environment_id];
-                let value_display = '';
-                
-                if (!env_value || env_value.value === null || env_value.value === '') {
-                    // Not configured or explicitly disabled
-                    value_display = `<span class="env-value env-not-set"><strong>${this._escapeHtml(env.name)}:</strong> <em>—</em></span>`;
-                } else {
-                    // Determine temporal status first
-                    const now = new Date();
-                    let is_expired = false;
-                    let is_scheduled = false;
-                    
-                    if (env_value.start_datetime) {
-                        const start = new Date(env_value.start_datetime);
-                        if (now < start) {
-                            is_scheduled = true;
-                        }
-                    }
-                    
-                    if (env_value.end_datetime) {
-                        const end = new Date(env_value.end_datetime);
-                        if (now > end) {
-                            is_expired = true;
-                        }
-                    }
-                    
-                    // Format value and determine final class
-                    let display_value = env_value.value;
-                    let final_class = 'active';
-                    
-                    if (phlag.type === 'SWITCH') {
-                        const is_true = env_value.value === 'true';
-                        
-                        // Determine effective state for switches
-                        if (!is_true || is_expired) {
-                            // False OR expired true = effectively disabled (red X)
-                            display_value = '✗';
-                            final_class = 'false';
-                        } else if (is_scheduled) {
-                            // True but scheduled (yellow checkmark)
-                            display_value = '✓';
-                            final_class = 'scheduled';
-                        } else {
-                            // True and active (green checkmark)
-                            display_value = '✓';
-                            final_class = 'active';
-                        }
-                    } else {
-                        // Non-switch types use temporal status
-                        if (is_expired) {
-                            final_class = 'expired';
-                        } else if (is_scheduled) {
-                            final_class = 'scheduled';
-                        }
-                    }
-                    
-                    value_display = `<span class="env-value env-${final_class}"><strong>${this._escapeHtml(env.name)}:</strong> <code>${this._escapeHtml(display_value)}</code></span>`;
-                }
-                
-                env_displays.push(value_display);
-            });
-            
-            environments_html = env_displays.join('<br>');
+            // Show inline values for all environments (≤3 total)
+            environments_html = this._buildEnvironmentDisplay(
+                this.environments,
+                env_values,
+                phlag
+            );
         } else {
-            // Show "View Details" link for many environments
-            environments_html = `<a href="${this.base_url}/flags/${phlag.phlag_id}" class="view-environments">View Details</a>`;
+            // More than 3 environments - show only important ones
+            const important_envs = this.environments.filter(env => 
+                env.is_important === true ||
+                env.is_important === 1 ||
+                env.is_important === '1'
+            );
+            
+            if (important_envs.length > 0) {
+                // Show important environments inline only
+                environments_html = this._buildEnvironmentDisplay(
+                    important_envs,
+                    env_values,
+                    phlag
+                );
+            } else {
+                // No important environments - show nothing
+                environments_html = '<em>—</em>';
+            }
         }
         
         row.innerHTML = `
@@ -1706,6 +1652,96 @@ const PhlagManager = {
         }
         
         return { label: 'Active', class: 'active' };
+    },
+    
+    /**
+     * Builds environment display HTML for a list of environments
+     * 
+     * Generates inline value displays for the provided environments,
+     * handling temporal constraints and type-specific formatting.
+     * Used to show environment values in the flag list table.
+     * 
+     * @param {Array} environments - Array of environment objects to display
+     * @param {Array} env_values - Array of environment value objects for the flag
+     * @param {object} phlag - Phlag object containing type information
+     * 
+     * @returns {string} HTML string with environment displays
+     * 
+     * @private
+     */
+    _buildEnvironmentDisplay: function(environments, env_values, phlag) {
+        const env_displays = [];
+        
+        // Create a map of environment values by environment ID
+        const env_value_map = {};
+        env_values.forEach(ev => {
+            env_value_map[ev.phlag_environment_id] = ev;
+        });
+        
+        environments.forEach(env => {
+            const env_value = env_value_map[env.phlag_environment_id];
+            let value_display = '';
+            
+            if (!env_value || env_value.value === null || env_value.value === '') {
+                // Not configured or explicitly disabled
+                value_display = `<span class="env-value env-not-set"><strong>${this._escapeHtml(env.name)}:</strong> <em>—</em></span>`;
+            } else {
+                // Determine temporal status first
+                const now = new Date();
+                let is_expired = false;
+                let is_scheduled = false;
+                
+                if (env_value.start_datetime) {
+                    const start = new Date(env_value.start_datetime);
+                    if (now < start) {
+                        is_scheduled = true;
+                    }
+                }
+                
+                if (env_value.end_datetime) {
+                    const end = new Date(env_value.end_datetime);
+                    if (now > end) {
+                        is_expired = true;
+                    }
+                }
+                
+                // Format value and determine final class
+                let display_value = env_value.value;
+                let final_class = 'active';
+                
+                if (phlag.type === 'SWITCH') {
+                    const is_true = env_value.value === 'true';
+                    
+                    // Determine effective state for switches
+                    if (!is_true || is_expired) {
+                        // False OR expired true = effectively disabled (red X)
+                        display_value = '✗';
+                        final_class = 'false';
+                    } else if (is_scheduled) {
+                        // True but scheduled (yellow checkmark)
+                        display_value = '✓';
+                        final_class = 'scheduled';
+                    } else {
+                        // True and active (green checkmark)
+                        display_value = '✓';
+                        final_class = 'active';
+                    }
+                } else {
+                    // Non-switch types use temporal status
+                    if (is_expired) {
+                        final_class = 'expired';
+                    } else if (is_scheduled) {
+                        final_class = 'scheduled';
+                    }
+                }
+                
+                value_display = `<span class="env-value env-${final_class}"><strong>${this._escapeHtml(env.name)}:</strong> <code>${this._escapeHtml(display_value)}</code></span>`;
+            }
+            
+            env_displays.push(value_display);
+        });
+        
+        return env_displays.join('<br>');
     },
     
     /**

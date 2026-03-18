@@ -17,6 +17,16 @@
             <span class="help-text">A descriptive name for this environment.</span>
         </div>
 
+        <div class="form-group checkbox-group">
+            <label>
+                <input type="checkbox" id="is_important" name="is_important" value="1">
+                <span>
+                    Mark as Important
+                    <span class="help-text">Important environments always show on the flag list page, regardless of total environment count. Use this for critical environments like production.</span>
+                </span>
+            </label>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 {% if mode == 'create' %}Create Environment{% else %}Update Environment{% endif %}

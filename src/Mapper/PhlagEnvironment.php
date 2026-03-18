@@ -45,6 +45,7 @@ class PhlagEnvironment extends \DealNews\DB\AbstractMapper {
         'phlag_environment_id' => [],
         'name'                 => [],
         'sort_order'           => [],
+        'is_important'         => [],
         'create_datetime'      => [
             'read_only' => true,
         ],
