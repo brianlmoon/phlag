@@ -33,6 +33,7 @@ CREATE TABLE phlag_environments (
     phlag_environment_id bigserial PRIMARY KEY,
     name varchar(255) NOT NULL UNIQUE,
     sort_order integer NOT NULL DEFAULT 0,
+    is_important boolean NOT NULL DEFAULT false,
     create_datetime timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_datetime timestamp DEFAULT NULL
 );

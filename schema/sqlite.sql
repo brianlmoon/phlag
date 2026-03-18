@@ -31,6 +31,7 @@ CREATE TABLE phlag_environments (
     phlag_environment_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    is_important INTEGER NOT NULL DEFAULT 0,
     create_datetime TEXT NOT NULL DEFAULT (datetime('now')),
     update_datetime TEXT DEFAULT NULL
 );

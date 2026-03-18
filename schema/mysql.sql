@@ -40,6 +40,7 @@ CREATE TABLE `phlag_environments` (
     `phlag_environment_id` bigint unsigned NOT NULL AUTO_INCREMENT,
     `name` varchar(255) NOT NULL,
     `sort_order` int NOT NULL DEFAULT 0,
+    `is_important` tinyint(1) NOT NULL DEFAULT 0,
     `create_datetime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_datetime` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`phlag_environment_id`),

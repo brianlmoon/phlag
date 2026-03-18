@@ -19,11 +19,14 @@ Navigate to your Phlag installation (e.g., `http://localhost`). Since the databa
 1. Navigate to `/environments` or click "Environments" in the navigation
 2. Click "Create New Environment"
 3. Create environments like:
-   - **production** (sort_order: 10)
-   - **staging** (sort_order: 20)
+   - **production** (sort_order: 10, mark as important ✓)
+   - **staging** (sort_order: 20, mark as important ✓)
    - **development** (sort_order: 30)
+   - **qa** (sort_order: 40)
 
 The `sort_order` determines the display order in the UI (lower numbers appear first).
+
+**Tip:** Mark critical environments like "production" and "staging" as **important**. Important environments always display on the flag list page, even when you have many environments. This lets you see production values at a glance without clicking through to each flag's detail page.
 
 ### 3. Create API Keys
 
