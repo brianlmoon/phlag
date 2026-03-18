@@ -1525,6 +1525,24 @@ table td.hide-mobile:nth-child(5) {
     overflow-y: auto;
 }
 
+/* Environment list styling */
+.environment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+
+.environment-list li {
+    display: inline-block;
+    background-color: #e7f3ff;
+    color: #0066cc;
+    padding: 0.25rem 0.75rem;
+    margin: 0.25rem 0.25rem 0.25rem 0;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    border: 1px solid #b3d9ff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .header-row {

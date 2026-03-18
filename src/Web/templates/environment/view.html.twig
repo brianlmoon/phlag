@@ -16,28 +16,29 @@
         <p>Loading environment...</p>
     </div>
 
-    <div id="environment-details" class="hidden details-view">
-        <div class="detail-group">
-            <label>ID</label>
-            <div id="detail-id" class="detail-value"></div>
+    <div id="environment-details" class="hidden">
+        <div class="card">
+            <h2>Environment Information</h2>
+            
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Name:</label>
+                    <span id="detail-name"></span>
+                </div>
+
+                <div class="detail-item">
+                    <label>Created:</label>
+                    <span id="detail-created"></span>
+                </div>
+
+                <div class="detail-item">
+                    <label>Last Updated:</label>
+                    <span id="detail-updated"></span>
+                </div>
+            </div>
         </div>
 
-        <div class="detail-group">
-            <label>Name</label>
-            <div id="detail-name" class="detail-value"></div>
-        </div>
-
-        <div class="detail-group">
-            <label>Created</label>
-            <div id="detail-created" class="detail-value"></div>
-        </div>
-
-        <div class="detail-group">
-            <label>Last Updated</label>
-            <div id="detail-updated" class="detail-value"></div>
-        </div>
-
-        <div class="form-actions">
+        <div class="mt-3">
             <a href="{{ base_url }}/environments" class="btn btn-secondary">Back to List</a>
         </div>
     </div>
