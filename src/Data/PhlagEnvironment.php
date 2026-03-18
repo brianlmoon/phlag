@@ -62,8 +62,9 @@ class PhlagEnvironment extends \Moonspot\ValueObjects\ValueObject {
      *
      * Important environments always show on the flag list page, regardless
      * of total environment count. Use this to prioritize critical environments
-     * like production. When false, the environment is hidden behind "View
-     * Details" when more than 3 total environments exist.
+     * like production. When false and more than 3 total environments exist,
+     * this environment is summarized with an em dash in the flag list UI;
+     * click the flag name to view full environment details.
      *
      * @var bool
      */
