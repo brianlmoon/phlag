@@ -68,7 +68,7 @@
 #     -v /path/to/config.ini:/app/etc/config.ini:ro \
 #     phlag:latest
 
-FROM phusion/baseimage:jammy-1.0.4
+FROM phusion/baseimage:noble-1.0.3
 
 # Set environment variables for non-interactive installation
 ENV DEBIAN_FRONTEND=noninteractive \
