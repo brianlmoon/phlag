@@ -1253,6 +1253,11 @@ table td.hide-mobile:nth-child(5) {
     border-radius: 3px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.875em;
+    display: inline-block;
+    max-width: 20ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
 }
 
 .env-value.env-active {
