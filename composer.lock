@@ -4,25 +4,29 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d4916818756bb0904e3a49ef9bab0389",
+    "content-hash": "2337f2cb21c556413553f3672602acfe",
     "packages": [
         {
             "name": "dealnews/console",
-            "version": "0.2.1",
+            "version": "1.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dealnews/Console.git",
-                "reference": "24cb97a8fc054e7edd183401bb353b2edc6dcd29"
+                "reference": "3b57fa3cdb0a129b899241e00bb66c33ebe80c37"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dealnews/Console/zipball/24cb97a8fc054e7edd183401bb353b2edc6dcd29",
-                "reference": "24cb97a8fc054e7edd183401bb353b2edc6dcd29",
+                "url": "https://api.github.com/repos/dealnews/Console/zipball/3b57fa3cdb0a129b899241e00bb66c33ebe80c37",
+                "reference": "3b57fa3cdb0a129b899241e00bb66c33ebe80c37",
                 "shasum": ""
             },
             "require": {
                 "ext-date": "*",
-                "php": ">=5.5.0"
+                "php": "^8.2",
+                "psr/log": "^3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^11.5"
             },
             "type": "library",
             "autoload": {
@@ -38,7 +42,7 @@
                 {
                     "name": "Brian Moon",
                     "email": "brianm@dealnews.com",
-                    "homepage": "http://dealnews.com/",
+                    "homepage": "https://www.dealnews.com/",
                     "role": "Developer"
                 }
             ],
@@ -51,9 +55,9 @@
             ],
             "support": {
                 "issues": "https://github.com/dealnews/Console/issues",
-                "source": "https://github.com/dealnews/Console/tree/0.2.1"
+                "source": "https://github.com/dealnews/Console/tree/1.0.1"
             },
-            "time": "2018-02-22T01:02:58+00:00"
+            "time": "2025-12-12T15:10:45+00:00"
         },
         {
             "name": "dealnews/constraints",
@@ -177,26 +181,27 @@
         },
         {
             "name": "dealnews/db",
-            "version": "4.0.5",
+            "version": "4.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dealnews/db.git",
-                "reference": "801f53e150385ceac94e3e50cc7215905e5f9da7"
+                "reference": "7b6fa27b150e2d75e8667ff4ef271e033f3ddc6a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dealnews/db/zipball/801f53e150385ceac94e3e50cc7215905e5f9da7",
-                "reference": "801f53e150385ceac94e3e50cc7215905e5f9da7",
+                "url": "https://api.github.com/repos/dealnews/db/zipball/7b6fa27b150e2d75e8667ff4ef271e033f3ddc6a",
+                "reference": "7b6fa27b150e2d75e8667ff4ef271e033f3ddc6a",
                 "shasum": ""
             },
             "require": {
-                "dealnews/console": "^0.2.1",
+                "dealnews/console": "^1.0.1",
                 "dealnews/data-mapper": "^3.4",
                 "dealnews/get-config": "^2.2",
+                "ext-pdo": "*",
                 "php": "^8.2"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.89",
+                "friendsofphp/php-cs-fixer": "^3.94",
                 "php-parallel-lint/php-parallel-lint": "^1.4",
                 "phpunit/phpunit": "^11.5"
             },
@@ -216,9 +221,9 @@
             "description": "Database Library providing a PDO factory and CRUD operations",
             "support": {
                 "issues": "https://github.com/dealnews/db/issues",
-                "source": "https://github.com/dealnews/db/tree/4.0.5"
+                "source": "https://github.com/dealnews/db/tree/4.1.0"
             },
-            "time": "2025-11-21T14:58:34+00:00"
+            "time": "2026-03-21T18:38:42+00:00"
         },
         {
             "name": "dealnews/get-config",
@@ -1165,6 +1170,56 @@
                 "source": "https://github.com/php-fig/http-message/tree/2.0"
             },
             "time": "2023-04-04T09:54:51+00:00"
+        },
+        {
+            "name": "psr/log",
+            "version": "3.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
+                "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "https://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for logging libraries",
+            "homepage": "https://github.com/php-fig/log",
+            "keywords": [
+                "log",
+                "psr",
+                "psr-3"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/log/tree/3.0.2"
+            },
+            "time": "2024-09-11T13:17:53+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -3355,5 +3410,5 @@
         "ext-curl": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
