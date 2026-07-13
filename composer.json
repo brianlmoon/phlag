@@ -28,7 +28,7 @@
         "league/oauth2-client": "^2.9",
         "league/oauth2-google": "^5.0",
         "pagemill/router": "^2.0",
-        "phpmailer/phpmailer": "^7.0",
+        "phpmailer/phpmailer": "^7.1",
         "twig/twig": "^3.24"
     },
     "require-dev": {
