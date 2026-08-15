@@ -207,9 +207,21 @@ const UI = {
         input.style.opacity = '0';
         document.body.appendChild(input);
         input.select();
-        document.execCommand('copy');
+
+        let succeeded = false;
+        try {
+            succeeded = document.execCommand('copy');
+        } catch (error) {
+            succeeded = false;
+        }
+
         document.body.removeChild(input);
-        UI.showMessage('Copied to clipboard!', 'success');
+
+        if (succeeded) {
+            UI.showMessage('Copied to clipboard!', 'success');
+        } else {
+            UI.showMessage('Unable to copy to clipboard.', 'error');
+        }
     },
 
     /**
