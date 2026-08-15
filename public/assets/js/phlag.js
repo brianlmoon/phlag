@@ -1413,7 +1413,7 @@ const PhlagManager = {
             <td>
                 <span class="name-with-copy">
                     <a href="${this.base_url}/flags/${phlag.phlag_id}">${this._escapeHtml(phlag.name)}</a>
-                    <button type="button" class="copy-icon-btn" title="Copy flag name" aria-label="Copy flag name" onclick="UI.copyToClipboard('${phlag.name}')"><span aria-hidden="true">⧉</span></button>
+                    <button type="button" class="copy-icon-btn" title="Copy flag name" aria-label="Copy flag name"><span aria-hidden="true">⧉</span></button>
                 </span>
                 ${description}
             </td>
@@ -1427,7 +1427,11 @@ const PhlagManager = {
                 <button onclick="PhlagManager.delete(${phlag.phlag_id})" class="btn btn-small btn-danger">Delete</button>
             </td>
         `;
-        
+
+        row.querySelector('.copy-icon-btn').addEventListener('click', () => {
+            UI.copyToClipboard(phlag.name);
+        });
+
         return row;
     },
     
