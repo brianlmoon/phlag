@@ -170,8 +170,63 @@ const UI = {
     },
     
     /**
+     * Copies text to the clipboard
+     *
+     * Uses the modern Clipboard API when available in a secure context,
+     * falling back to a hidden textarea with execCommand for older
+     * browsers or non-secure contexts. Shows a success toast on
+     * completion.
+     *
+     * @param {string} text - Text to copy to the clipboard
+     */
+    copyToClipboard: function(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                UI.showMessage('Copied to clipboard!', 'success');
+            }).catch(() => {
+                UI._legacyCopy(text);
+            });
+        } else {
+            this._legacyCopy(text);
+        }
+    },
+
+    /**
+     * Copies text to the clipboard using a hidden textarea
+     *
+     * Fallback for browsers or contexts where the Clipboard API
+     * isn't available.
+     *
+     * @param {string} text - Text to copy to the clipboard
+     * @private
+     */
+    _legacyCopy: function(text) {
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+
+        let succeeded = false;
+        try {
+            succeeded = document.execCommand('copy');
+        } catch (error) {
+            succeeded = false;
+        }
+
+        document.body.removeChild(input);
+
+        if (succeeded) {
+            UI.showMessage('Copied to clipboard!', 'success');
+        } else {
+            UI.showMessage('Unable to copy to clipboard.', 'error');
+        }
+    },
+
+    /**
      * Gets or creates the message container element
-     * 
+     *
      * @returns {HTMLElement} Message container element
      * @private
      */
