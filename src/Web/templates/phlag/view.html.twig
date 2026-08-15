@@ -23,7 +23,10 @@
             <div class="detail-grid">
                 <div class="detail-item">
                     <label>Name:</label>
-                    <span id="detail-name"></span>
+                    <span class="name-with-copy">
+                        <span id="detail-name"></span>
+                        <button type="button" id="copy-name-btn" class="copy-icon-btn" title="Copy flag name">⧉</button>
+                    </span>
                 </div>
 
                 <div class="detail-item">
@@ -73,6 +76,11 @@
         // Handle delete button
         document.getElementById('delete-btn').addEventListener('click', function() {
             PhlagManager.delete({{ phlag_id }});
+        });
+
+        // Handle copy name button
+        document.getElementById('copy-name-btn').addEventListener('click', function() {
+            UI.copyToClipboard(document.getElementById('detail-name').textContent);
         });
     });
 </script>

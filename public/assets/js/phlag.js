@@ -1411,7 +1411,10 @@ const PhlagManager = {
         
         row.innerHTML = `
             <td>
-                <a href="${this.base_url}/flags/${phlag.phlag_id}">${this._escapeHtml(phlag.name)}</a>
+                <span class="name-with-copy">
+                    <a href="${this.base_url}/flags/${phlag.phlag_id}">${this._escapeHtml(phlag.name)}</a>
+                    <button type="button" class="copy-icon-btn" title="Copy flag name" onclick="UI.copyToClipboard('${phlag.name}')">⧉</button>
+                </span>
                 ${description}
             </td>
             <td class="hide-mobile"><span class="badge">${phlag.type || 'N/A'}</span></td>
