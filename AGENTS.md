@@ -18,9 +18,9 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 ### Action Layer (Custom Endpoints)
 - **FlagValueTrait**: Shared temporal logic + type casting (including JSON parsing)
 - **ApiKeyAuthTrait**: Bearer token validation for flag API endpoints
-- **GetPhlagState** (`/flag/{name}`): Single flag value (typed scalar or JSON object/array)
-- **GetAllFlags** (`/all-flags`): All flags as key-value object (JSON parsed)
-- **GetFlags** (`/get-flags`): All flags with metadata (ISO 8601 dates)
+- **GetPhlagState** (`/flag/{environment}/{name}`): Single flag value (typed scalar or JSON object/array)
+- **GetAllFlags** (`/all-flags/{environment}`): All flags as key-value object (JSON parsed)
+- **GetFlags** (`/get-flags/{environment}`): All flags with metadata (ISO 8601 dates)
 - **PhlagWebhook/Test** (`/webhook/test/{id}`): Test webhook delivery
 
 ### Web Layer
@@ -39,7 +39,7 @@ Feature flag management system (PHP 8.0+) with RESTful API and web admin UI. Man
 - **CSRF**: Protected login/first-user forms
 
 ### Bearer Token (Flag API)
-- **Endpoints**: `/flag/{name}`, `/all-flags`, `/get-flags`
+- **Endpoints**: `/flag/{environment}/{name}`, `/all-flags/{environment}`, `/get-flags/{environment}`
 - **Method**: `Authorization: Bearer <api_key>` header
 - **Protected**: Flag state retrieval only
 - **Trait**: `ApiKeyAuthTrait` handles validation
@@ -71,11 +71,11 @@ POST                /webhook/test/{id}          # Test webhook delivery
 
 ### Flag State API (Bearer Auth Required)
 ```
-GET /flag/{name}      # Returns: true, 100, 1.5, "text", {obj}, [arr], false, or null
-GET /all-flags        # Returns: {"flag1": true, "flag2": {"key": "val"}, ...}
-GET /get-flags        # Returns: [{name, type, value, start, end}, ...]
+GET /flag/{environment}/{name}      # Returns: true, 100, 1.5, "text", {obj}, [arr], false, or null
+GET /all-flags/{environment}        # Returns: {"flag1": true, "flag2": {"key": "val"}, ...}
+GET /get-flags/{environment}        # Returns: [{name, type, value, start, end}, ...]
 ```
-**Trailing slash optional**
+**Trailing slash optional**. `{environment}` must be a valid environment name; API keys with no environment assignments have unrestricted access, otherwise the key must be authorized for the requested environment.
 
 ### Temporal Logic
 Flag is **active** when:
@@ -360,13 +360,13 @@ curl -X POST http://localhost/api/Phlag/ \
 ### Query Flags
 ```bash
 # Single flag value
-curl -H "Authorization: Bearer <key>" http://localhost/flag/feature_name
+curl -H "Authorization: Bearer <key>" http://localhost/flag/production/feature_name
 
 # All flag values
-curl -H "Authorization: Bearer <key>" http://localhost/all-flags
+curl -H "Authorization: Bearer <key>" http://localhost/all-flags/production
 
 # All flags with details
-curl -H "Authorization: Bearer <key>" http://localhost/get-flags
+curl -H "Authorization: Bearer <key>" http://localhost/get-flags/production
 ```
 
 ### Configure Database Sessions

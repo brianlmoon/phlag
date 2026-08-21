@@ -459,7 +459,7 @@ webhooks.max_retries = 1     # Number of retry attempts
 
 ### Using the Flag API Directly
 
-Phlag provides three endpoints for retrieving flag values. All require Bearer token authentication.
+Phlag provides three endpoints for retrieving flag values. All require Bearer token authentication and an environment name in the path (e.g. `production`, `staging`, `development`). An API key must be authorized for the requested environment (keys with no environment assignments have unrestricted access).
 
 #### Get Single Flag Value
 
@@ -467,7 +467,7 @@ Returns the current evaluated value as a scalar:
 
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
-     http://localhost:8000/flag/feature_checkout
+     http://localhost:8000/flag/production/feature_checkout
 ```
 
 Response examples:
@@ -483,13 +483,15 @@ false                   # SWITCH flag (inactive)
 null                    # Inactive or non-existent flag
 ```
 
+If the environment doesn't exist, a 404 response is returned.
+
 #### Get All Flag Values
 
-Returns all flags as a key-value object:
+Returns all flags as a key-value object for the given environment:
 
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
-     http://localhost:8000/all-flags
+     http://localhost:8000/all-flags/production
 ```
 
 Response:
@@ -505,11 +507,11 @@ Response:
 
 #### Get All Flags with Metadata
 
-Returns complete flag details including temporal constraints:
+Returns complete flag details including temporal constraints for the given environment:
 
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
-     http://localhost:8000/get-flags
+     http://localhost:8000/get-flags/production
 ```
 
 Response:
