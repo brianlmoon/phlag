@@ -567,6 +567,10 @@ table td.hide-mobile:nth-child(5) {
         align-items: start;
     }
 
+    .form-row .form-group {
+        min-width: 0;
+    }
+
     .environment-value-section .form-row .form-group {
         margin-bottom: 0;
     }
