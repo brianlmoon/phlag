@@ -25,3 +25,6 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+
+# Local dev data (e.g. SQLite database for docker-compose.dev.yml)
+/var/

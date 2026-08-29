@@ -1,0 +1,73 @@
+# Phlag Docker Compose Configuration - Local Development
+#
+# This docker-compose.dev.yml provides a local development environment for
+# Phlag backed by a file-based SQLite database, with the source tree and
+# Composer dependencies bind-mounted for live editing (no rebuild needed).
+#
+# ## Quick Start
+#
+# 1. Build and start the stack:
+#    docker compose -f docker-compose.dev.yml up -d --build
+#
+# 2. Initialize the database (one-time, run from the host):
+#    mkdir -p var/sqlite
+#    sqlite3 var/sqlite/phlag.db < schema/sqlite.sql
+#
+# 3. Access the application:
+#    http://localhost:8000
+#
+# 4. Create your first user:
+#    http://localhost:8000/first-user
+#
+# ## Notes
+#
+# - Uses `DB_PHLAG_TYPE=pdo` with an explicit `DB_PHLAG_DSN`, not `sqlite`,
+#   because the vendored dealnews/db package only supports `mysql`, `pgsql`,
+#   and `pdo` (with a DSN) as database types.
+# - `./vendor` is bind-mounted so the container uses the host's Composer
+#   install. Run `composer install` on the host (or inside the container via
+#   `docker compose -f docker-compose.dev.yml exec phlag composer install`)
+#   if `vendor/` is missing or out of date.
+# - The `command` override chowns the bind-mounted `/app/data` directory to
+#   `www-data` before handing off to the container's init system, since a
+#   host-mounted directory is not owned by `www-data` by default.
+
+services:
+  phlag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:80"
+    environment:
+      # Database configuration - local SQLite file
+      DB_PHLAG_TYPE: pdo
+      DB_PHLAG_DSN: "sqlite:/app/data/phlag.db"
+
+      # Application configuration
+      SESSION_TIMEOUT: 1800
+    volumes:
+      # Live source for edit-without-rebuild development
+      - ./src:/app/src
+      - ./public:/app/public
+
+      # Host-managed Composer dependencies
+      - ./vendor:/app/vendor
+      - ./composer.json:/app/composer.json
+      - ./composer.lock:/app/composer.lock
+
+      # SQLite database file, persisted on the host
+      - ./var/sqlite:/app/data
+
+      # Logs for debugging
+      - phlag-dev-nginx-logs:/var/log/nginx
+      - phlag-dev-php-logs:/var/log/php
+    command: >
+      bash -c "mkdir -p /app/data && chown -R www-data:www-data /app/data && exec /sbin/my_init"
+
+# Named volumes for log persistence
+volumes:
+  phlag-dev-nginx-logs:
+    driver: local
+  phlag-dev-php-logs:
+    driver: local
