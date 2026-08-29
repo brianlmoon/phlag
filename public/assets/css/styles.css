@@ -1589,15 +1589,12 @@ table td.hide-mobile:nth-child(5) {
     overflow-y: hidden;
 }
 
-/* Textarea with format button wrapper */
-.textarea-with-button {
-    position: relative;
-}
-
-.btn-format-json {
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
+/* JSON editor for JSON flags (https://github.com/josdejong/jsoneditor) */
+.env-value-jsoneditor {
+    height: 300px;
+    margin-bottom: 0.5rem;
+    resize: vertical;
+    overflow: hidden;
 }
 
 /* Event type checkboxes */

@@ -2,6 +2,10 @@
 
 {% block title %}{{ title }} - Phlag Admin{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@10.4.3/dist/jsoneditor.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="phlag-form">
     <div class="page-header">
@@ -64,6 +68,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor@10.4.3/dist/jsoneditor.min.js"></script>
 <script src="{{ base_url }}/assets/js/phlag.js"></script>
 <script>
     // Initialize phlag manager
