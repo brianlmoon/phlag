@@ -414,35 +414,18 @@ table td.hide-mobile:nth-child(5) {
     white-space: nowrap;
 }
 
-/* Environment values table: truncate long values instead of wrapping */
+/* Environment values table: truncate long values instead of wrapping.
+   Cap the value cell's own content width (rather than table-layout: fixed
+   column percentages) so the date columns keep their natural, unconstrained
+   auto-layout width and never wrap. */
 @media (min-width: 601px) {
-    .environment-values-table {
-        table-layout: fixed;
-    }
-
-    .environment-values-table th:nth-child(1),
-    .environment-values-table td:nth-child(1) {
-        width: 15%;
-    }
-
-    .environment-values-table th:nth-child(2),
-    .environment-values-table td:nth-child(2) {
-        width: 40%;
-    }
-
-    .environment-values-table th:nth-child(3),
-    .environment-values-table td:nth-child(3),
-    .environment-values-table th:nth-child(4),
-    .environment-values-table td:nth-child(4),
-    .environment-values-table th:nth-child(5),
-    .environment-values-table td:nth-child(5) {
-        width: 15%;
-    }
-
-    .environment-values-table td:nth-child(2) {
+    .environment-values-table td:nth-child(2) code {
+        display: inline-block;
+        max-width: 400px;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+        vertical-align: bottom;
     }
 }
 
@@ -825,6 +808,49 @@ table td.hide-mobile:nth-child(5) {
 .detail-grid-simple .detail-item:nth-child(4),
 .detail-grid-simple .detail-item:nth-child(5) {
     grid-column: span 1;
+}
+
+/* Flag view: Name, Type, Created, and Last Updated share the top row - Name gets
+   extra width since it's usually the longest field. Every column uses minmax(0, ..)
+   rather than a bare max-content/1fr so the row can never force horizontal overflow;
+   Name truncates with an ellipsis instead of wrapping if it still doesn't fit.
+   Description spans full width on the row below. */
+.detail-grid-flag {
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+}
+
+.detail-grid-flag .detail-item:nth-child(1),
+.detail-grid-flag .detail-item:nth-child(2) {
+    grid-column: auto;
+}
+
+.detail-grid-flag .detail-item:nth-child(1) {
+    min-width: 0;
+}
+
+.detail-grid-flag .detail-item:nth-child(5) {
+    grid-column: 1 / -1;
+}
+
+/* .name-with-copy is normally inline-flex, which sizes itself to fit its
+   content (shrink-to-fit) rather than to the space available - so a nowrap
+   child's full width can still push it, and everything after it, wider than
+   the viewport. Make it a block-level flex container instead, which always
+   takes exactly its parent's width, so #detail-name has an unambiguous,
+   already-constrained box to shrink and truncate within. */
+.detail-grid-flag .detail-item .name-with-copy {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+}
+
+.detail-grid-flag #detail-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Mobile: stack all items vertically */
