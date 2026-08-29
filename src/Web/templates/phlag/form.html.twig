@@ -2,6 +2,10 @@
 
 {% block title %}{{ title }} - Phlag Admin{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@10.4.3/dist/jsoneditor.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="phlag-form">
     <div class="page-header">
@@ -60,10 +64,24 @@
             <a href="{{ base_url }}/flags" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
+
+    {# Shared JSON editor lightbox, reused for whichever environment's "Edit JSON" button is clicked #}
+    <div id="json-editor-modal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <button type="button" class="modal-close" aria-label="Close">&times;</button>
+            <h2 id="json-editor-modal-title">Edit JSON Value</h2>
+            <div id="json-editor-mount" class="json-editor-mount"></div>
+            <div class="modal-actions">
+                <button type="button" id="json-editor-done-btn" class="btn btn-primary">Done</button>
+                <button type="button" id="json-editor-cancel-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor@10.4.3/dist/jsoneditor.min.js"></script>
 <script src="{{ base_url }}/assets/js/phlag.js"></script>
 <script>
     // Initialize phlag manager

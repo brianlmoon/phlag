@@ -304,7 +304,9 @@ const PhlagManager = {
      */
     initForm: function() {
         const form = document.getElementById('phlag-form');
-        
+
+        this._initJsonEditorModal();
+
         // Load environments and render inputs
         UI.showLoading();
         this.loadEnvironments()
@@ -441,9 +443,10 @@ const PhlagManager = {
                 <div class="form-group">
                     <label id="env_value_label_${env_id}" for="env_value_${env_id}">Value</label>
                     <input type="text" id="env_value_${env_id}" class="env-value-input" placeholder="Leave empty to not configure">
-                    <div class="textarea-with-button">
-                        <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
-                        <button type="button" id="format_json_${env_id}" class="btn btn-secondary btn-format-json hidden">Format JSON</button>
+                    <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
+                    <div id="env_value_json_preview_${env_id}" class="env-value-json-preview hidden">
+                        <code id="env_value_json_preview_text_${env_id}" class="env-value-json-preview-text"></code>
+                        <button type="button" id="edit_json_${env_id}" class="btn btn-secondary">Edit JSON</button>
                     </div>
                     <select id="env_value_select_${env_id}" class="env-value-select hidden">
                         <option value="">-- Not Configured --</option>
@@ -464,7 +467,14 @@ const PhlagManager = {
                 </div>
             </div>
         `;
-        
+
+        const edit_json_btn = section.querySelector(`#edit_json_${env_id}`);
+        if (edit_json_btn) {
+            edit_json_btn.addEventListener('click', () => {
+                this._openJsonEditorModal(env_id, env.name);
+            });
+        }
+
         return section;
     },
     
@@ -515,90 +525,104 @@ const PhlagManager = {
             const value_input = document.getElementById(`env_value_${env_id}`);
             const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
-            const format_button = document.getElementById(`format_json_${env_id}`);
-            
+            const json_preview = document.getElementById(`env_value_json_preview_${env_id}`);
+
             if (!value_input || !value_select || !value_textarea) {
                 return;
             }
-            
+
+            // Hide the JSON preview/edit control unless this is a JSON flag; shown below
+            if (json_preview && !is_json) {
+                json_preview.classList.add('hidden');
+            }
+
             if (is_switch) {
                 // Show select, hide input and textarea
                 value_input.classList.add('hidden');
                 value_textarea.classList.add('hidden');
                 value_select.classList.remove('hidden');
-                if (format_button) format_button.classList.add('hidden');
-                
+
                 // Update label to point to select
                 if (value_label) {
                     value_label.setAttribute('for', `env_value_select_${env_id}`);
                 }
-                
+
                 // Transfer value if it exists
                 if (value_input.value === 'true' || value_input.value === 'false') {
                     value_select.value = value_input.value;
                 } else if (value_textarea.value === 'true' || value_textarea.value === 'false') {
                     value_select.value = value_textarea.value;
                 }
-            } else if (is_string || is_json) {
-                // Show textarea, hide input and select
+            } else if (is_json) {
+                // Show the JSON preview/edit control, hide input, select, and the raw textarea
                 value_input.classList.add('hidden');
                 value_select.classList.add('hidden');
-                value_textarea.classList.remove('hidden');
-                
-                // Show format button only for JSON type
-                if (format_button) {
-                    if (is_json) {
-                        format_button.classList.remove('hidden');
-                        this._attachFormatButtonHandler(format_button, value_textarea, env.name);
-                    } else {
-                        format_button.classList.add('hidden');
-                    }
-                }
-                
-                // Update label to point to textarea
-                if (value_label) {
-                    value_label.setAttribute('for', `env_value_textarea_${env_id}`);
-                }
-                
+                value_textarea.classList.add('hidden');
+
                 // Transfer value if it exists
                 if (value_input.value) {
                     value_textarea.value = value_input.value;
                 } else if (value_select.value && value_select.value !== '') {
                     value_textarea.value = value_select.value;
                 }
-                
-                // Set up auto-grow
-                this._setupAutoGrow(value_textarea);
-                
+
                 // MEDIUMTEXT supports ~4M characters with utf8mb4
                 // Set practical UI limit of 1M characters
                 value_textarea.setAttribute('maxlength', '1000000');
-                
-                // Set placeholder based on type
-                if (is_json) {
-                    value_textarea.placeholder = 'e.g., {"key": "value"} or ["item1", "item2"]';
-                } else {
-                    value_textarea.placeholder = 'e.g., {"key": "value"} or multi-line text';
+
+                if (json_preview) {
+                    json_preview.classList.remove('hidden');
                 }
+
+                // Update label to point to the edit button
+                if (value_label) {
+                    value_label.setAttribute('for', `edit_json_${env_id}`);
+                }
+
+                this._updateJsonPreview(env_id);
+            } else if (is_string) {
+                // Show textarea, hide input and select
+                value_input.classList.add('hidden');
+                value_select.classList.add('hidden');
+                value_textarea.classList.remove('hidden');
+
+                // Update label to point to textarea
+                if (value_label) {
+                    value_label.setAttribute('for', `env_value_textarea_${env_id}`);
+                }
+
+                // Transfer value if it exists
+                if (value_input.value) {
+                    value_textarea.value = value_input.value;
+                } else if (value_select.value && value_select.value !== '') {
+                    value_textarea.value = value_select.value;
+                }
+
+                // Set up auto-grow
+                this._setupAutoGrow(value_textarea);
+
+                // MEDIUMTEXT supports ~4M characters with utf8mb4
+                // Set practical UI limit of 1M characters
+                value_textarea.setAttribute('maxlength', '1000000');
+                value_textarea.placeholder = 'e.g., {"key": "value"} or multi-line text';
             } else {
                 // Show input, hide select and textarea
                 value_select.classList.add('hidden');
                 value_textarea.classList.add('hidden');
                 value_input.classList.remove('hidden');
-                if (format_button) format_button.classList.add('hidden');
-                
+
                 // Update label to point to input
                 if (value_label) {
                     value_label.setAttribute('for', `env_value_${env_id}`);
                 }
-                
+
                 // Transfer value if it exists
                 if (value_select.value && value_select.value !== '') {
                     value_input.value = value_select.value;
                 } else if (value_textarea.value) {
                     value_input.value = value_textarea.value;
                 }
-                
+
                 // Update input type based on flag type
                 if (type === 'INTEGER') {
                     value_input.setAttribute('type', 'number');
@@ -611,6 +635,153 @@ const PhlagManager = {
                     value_input.removeAttribute('maxlength');
                     value_input.placeholder = 'e.g., 3.14';
                 }
+            }
+        });
+    },
+
+    /**
+     * Refreshes the read-only JSON preview shown for an environment
+     *
+     * Mirrors the environment's hidden textarea (the actual source of
+     * truth) into the truncated, single-line preview next to its
+     * "Edit JSON" button.
+     *
+     * @param {number} env_id - Environment ID
+     *
+     * @private
+     */
+    _updateJsonPreview: function(env_id) {
+        const preview_text = document.getElementById(`env_value_json_preview_text_${env_id}`);
+        const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
+
+        if (!preview_text || !value_textarea) {
+            return;
+        }
+
+        const value = value_textarea.value.trim();
+        preview_text.textContent = value || '(not configured)';
+        preview_text.classList.toggle('env-value-json-preview-empty', !value);
+    },
+
+    /**
+     * Opens the shared JSON editor modal for one environment's value
+     *
+     * Creates a fresh JSONEditor (https://github.com/josdejong/jsoneditor)
+     * inside the modal, seeded with the environment's current value.
+     * Nothing is written back to the environment until the user clicks
+     * "Done" - see _applyJsonEditorModal.
+     *
+     * @param {number} env_id - Environment ID
+     * @param {string} env_name - Environment name, shown in the modal title
+     *
+     * @private
+     */
+    _openJsonEditorModal: function(env_id, env_name) {
+        const modal = document.getElementById('json-editor-modal');
+        const mount = document.getElementById('json-editor-mount');
+        const title = document.getElementById('json-editor-modal-title');
+        const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
+
+        if (!modal || !mount || !value_textarea || typeof JSONEditor === 'undefined') {
+            return;
+        }
+
+        if (title) {
+            title.textContent = `Edit JSON Value — ${env_name}`;
+        }
+
+        this._json_editor_env_id = env_id;
+
+        modal.classList.remove('hidden');
+
+        // A CodeMirror-based editor created while its container is hidden (or left over
+        // from a previous open) renders with a stale, incorrect layout, so build it fresh
+        // each time the modal opens, after it's already visible.
+        if (this._modal_json_editor) {
+            this._modal_json_editor.destroy();
+        }
+
+        this._modal_json_editor = new JSONEditor(mount, {
+            mode: 'code',
+            modes: ['code', 'tree', 'text']
+        });
+        this._modal_json_editor.setText(value_textarea.value || '');
+    },
+
+    /**
+     * Closes the JSON editor modal without saving any changes
+     *
+     * @private
+     */
+    _closeJsonEditorModal: function() {
+        const modal = document.getElementById('json-editor-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+
+        if (this._modal_json_editor) {
+            this._modal_json_editor.destroy();
+            this._modal_json_editor = null;
+        }
+
+        this._json_editor_env_id = null;
+    },
+
+    /**
+     * Applies the JSON editor modal's content and closes it
+     *
+     * Writes the editor's current text back to the environment's hidden
+     * textarea (the actual source of truth used by validation and
+     * extraction) and refreshes its preview.
+     *
+     * @private
+     */
+    _applyJsonEditorModal: function() {
+        const env_id = this._json_editor_env_id;
+        const value_textarea = env_id !== null ? document.getElementById(`env_value_textarea_${env_id}`) : null;
+
+        if (value_textarea && this._modal_json_editor) {
+            try {
+                value_textarea.value = this._modal_json_editor.getText();
+            } catch (e) {
+                // Editor is mid-edit in an unparsable state; leave the textarea untouched.
+            }
+            this._updateJsonPreview(env_id);
+        }
+
+        this._closeJsonEditorModal();
+    },
+
+    /**
+     * Sets up the shared JSON editor modal's Done/Cancel/close handlers
+     *
+     * Idempotent - safe to call once during form initialization.
+     *
+     * @private
+     */
+    _initJsonEditorModal: function() {
+        if (this._json_editor_modal_initialized) {
+            return;
+        }
+
+        const modal = document.getElementById('json-editor-modal');
+        if (!modal) {
+            return;
+        }
+
+        this._json_editor_modal_initialized = true;
+
+        const done_btn = document.getElementById('json-editor-done-btn');
+        const cancel_btn = document.getElementById('json-editor-cancel-btn');
+        const close_x = modal.querySelector('.modal-close');
+
+        if (done_btn) done_btn.addEventListener('click', () => this._applyJsonEditorModal());
+        if (cancel_btn) cancel_btn.addEventListener('click', () => this._closeJsonEditorModal());
+        if (close_x) close_x.addEventListener('click', () => this._closeJsonEditorModal());
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this._closeJsonEditorModal();
             }
         });
     },
@@ -745,55 +916,6 @@ const PhlagManager = {
         }
         
         return null;
-    },
-    
-    /**
-     * Attaches click handler to format JSON button
-     * 
-     * Formats and validates JSON in the textarea. Shows validation errors
-     * if JSON is invalid or is a primitive type.
-     * 
-     * @param {HTMLElement} button - Format button element
-     * @param {HTMLTextAreaElement} textarea - Textarea containing JSON
-     * @param {string} env_name - Environment name for error messages
-     * 
-     * @private
-     */
-    _attachFormatButtonHandler: function(button, textarea, env_name) {
-        // Remove any existing listeners by cloning
-        const new_button = button.cloneNode(true);
-        button.parentNode.replaceChild(new_button, button);
-        
-        new_button.addEventListener('click', () => {
-            const value = textarea.value.trim();
-            
-            if (!value) {
-                UI.showMessage(`${env_name}: No JSON to format`, 'error');
-                return;
-            }
-            
-            try {
-                const parsed = JSON.parse(value);
-                
-                // Check if it's an object or array (not primitive)
-                if (typeof parsed !== 'object' || parsed === null) {
-                    UI.showMessage(`${env_name}: JSON must be an object or array (not a primitive)`, 'error');
-                    return;
-                }
-                
-                // Format with 2-space indentation
-                const formatted = JSON.stringify(parsed, null, 2);
-                textarea.value = formatted;
-                
-                // Trigger auto-grow to adjust height
-                textarea.style.height = 'auto';
-                textarea.style.height = textarea.scrollHeight + 'px';
-                
-                UI.showMessage(`${env_name}: JSON formatted successfully`, 'success');
-            } catch (e) {
-                UI.showMessage(`${env_name}: Invalid JSON - ${e.message}`, 'error');
-            }
-        });
     },
     
     /**
@@ -1510,9 +1632,9 @@ const PhlagManager = {
                 const display_value = env_value ? '<em>Disabled</em>' : '<em>Not configured</em>';
                 table_html += `
                     <tr class="env-not-configured">
-                        <td><strong>${this._escapeHtml(env.name)}</strong></td>
-                        <td>${display_value}</td>
-                        <td colspan="3">—</td>
+                        <td data-label="Environment"><strong>${this._escapeHtml(env.name)}</strong></td>
+                        <td data-label="Value">${display_value}</td>
+                        <td data-label="Details" colspan="3">—</td>
                     </tr>
                 `;
             } else {
@@ -1521,17 +1643,17 @@ const PhlagManager = {
                 if (phlag.type === 'SWITCH') {
                     display_value = env_value.value === 'true' ? '✓ true' : '✗ false';
                 }
-                
+
                 // Use update_datetime or fall back to create_datetime
                 const updated_datetime = env_value.update_datetime || env_value.create_datetime;
-                
+
                 table_html += `
                     <tr>
-                        <td><strong>${this._escapeHtml(env.name)}</strong></td>
-                        <td><code>${this._escapeHtml(display_value)}</code></td>
-                        <td>${this._formatDate(env_value.start_datetime)}</td>
-                        <td>${this._formatDate(env_value.end_datetime)}</td>
-                        <td>${this._formatDate(updated_datetime)}</td>
+                        <td data-label="Environment"><strong>${this._escapeHtml(env.name)}</strong></td>
+                        <td data-label="Value"><code>${this._escapeHtml(display_value)}</code></td>
+                        <td data-label="Start Date/Time">${this._formatDate(env_value.start_datetime)}</td>
+                        <td data-label="End Date/Time">${this._formatDate(env_value.end_datetime)}</td>
+                        <td data-label="Updated">${this._formatDate(updated_datetime)}</td>
                     </tr>
                 `;
             }
@@ -1616,7 +1738,10 @@ const PhlagManager = {
             // Set value in appropriate input
             if (is_switch && value_select) {
                 value_select.value = ev.value || '';
-            } else if ((is_string || is_json) && value_textarea) {
+            } else if (is_json && value_textarea) {
+                value_textarea.value = ev.value || '';
+                this._updateJsonPreview(env_id);
+            } else if (is_string && value_textarea) {
                 value_textarea.value = ev.value || '';
                 // Trigger auto-grow after setting value
                 this._setupAutoGrow(value_textarea);

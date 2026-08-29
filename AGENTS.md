@@ -245,7 +245,7 @@ public function example(int $foo, string $bar): ?ValueObj {
 - INTEGER → number input (step="1")
 - FLOAT → number input (step="any")
 - STRING → textarea (auto-grow, monospace font, 1M char limit)
-- JSON → textarea (auto-grow, monospace font, 1M char limit) with "Format JSON" button
+- JSON → [JSONEditor](https://github.com/josdejong/jsoneditor) (code/tree/text modes, loaded via CDN on the flag form only)
 
 ### Flag Name Validation
 - Pattern: `[a-zA-Z0-9_-]+`
