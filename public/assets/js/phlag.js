@@ -566,6 +566,10 @@ const PhlagManager = {
                     value_textarea.value = value_select.value;
                 }
 
+                // MEDIUMTEXT supports ~4M characters with utf8mb4
+                // Set practical UI limit of 1M characters
+                value_textarea.setAttribute('maxlength', '1000000');
+
                 if (json_preview) {
                     json_preview.classList.remove('hidden');
                 }
@@ -756,10 +760,16 @@ const PhlagManager = {
      * @private
      */
     _initJsonEditorModal: function() {
+        if (this._json_editor_modal_initialized) {
+            return;
+        }
+
         const modal = document.getElementById('json-editor-modal');
         if (!modal) {
             return;
         }
+
+        this._json_editor_modal_initialized = true;
 
         const done_btn = document.getElementById('json-editor-done-btn');
         const cancel_btn = document.getElementById('json-editor-cancel-btn');
