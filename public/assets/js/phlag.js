@@ -304,7 +304,9 @@ const PhlagManager = {
      */
     initForm: function() {
         const form = document.getElementById('phlag-form');
-        
+
+        this._initJsonEditorModal();
+
         // Load environments and render inputs
         UI.showLoading();
         this.loadEnvironments()
@@ -442,7 +444,10 @@ const PhlagManager = {
                     <label id="env_value_label_${env_id}" for="env_value_${env_id}">Value</label>
                     <input type="text" id="env_value_${env_id}" class="env-value-input" placeholder="Leave empty to not configure">
                     <textarea id="env_value_textarea_${env_id}" class="env-value-textarea hidden code-textarea" rows="3" placeholder="Leave empty to not configure"></textarea>
-                    <div id="env_value_jsoneditor_${env_id}" class="env-value-jsoneditor hidden"></div>
+                    <div id="env_value_json_preview_${env_id}" class="env-value-json-preview hidden">
+                        <code id="env_value_json_preview_text_${env_id}" class="env-value-json-preview-text"></code>
+                        <button type="button" id="edit_json_${env_id}" class="btn btn-secondary">Edit JSON</button>
+                    </div>
                     <select id="env_value_select_${env_id}" class="env-value-select hidden">
                         <option value="">-- Not Configured --</option>
                         <option value="true">true</option>
@@ -462,7 +467,14 @@ const PhlagManager = {
                 </div>
             </div>
         `;
-        
+
+        const edit_json_btn = section.querySelector(`#edit_json_${env_id}`);
+        if (edit_json_btn) {
+            edit_json_btn.addEventListener('click', () => {
+                this._openJsonEditorModal(env_id, env.name);
+            });
+        }
+
         return section;
     },
     
@@ -513,21 +525,15 @@ const PhlagManager = {
             const value_input = document.getElementById(`env_value_${env_id}`);
             const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
             const value_select = document.getElementById(`env_value_select_${env_id}`);
-            const jsoneditor_container = document.getElementById(`env_value_jsoneditor_${env_id}`);
+            const json_preview = document.getElementById(`env_value_json_preview_${env_id}`);
 
             if (!value_input || !value_select || !value_textarea) {
                 return;
             }
 
-            // Hide the JSON editor unless this is a JSON flag; shown/initialized below.
-            // Destroy rather than just hide: a CodeMirror-based editor left hidden and
-            // later re-shown renders with a stale, incorrect layout.
-            if (jsoneditor_container && !is_json) {
-                jsoneditor_container.classList.add('hidden');
-                if (this._json_editors && this._json_editors[env_id]) {
-                    this._json_editors[env_id].destroy();
-                    delete this._json_editors[env_id];
-                }
+            // Hide the JSON preview/edit control unless this is a JSON flag; shown below
+            if (json_preview && !is_json) {
+                json_preview.classList.add('hidden');
             }
 
             if (is_switch) {
@@ -548,7 +554,7 @@ const PhlagManager = {
                     value_select.value = value_textarea.value;
                 }
             } else if (is_json) {
-                // Show JSON editor, hide input, select, and the raw textarea
+                // Show the JSON preview/edit control, hide input, select, and the raw textarea
                 value_input.classList.add('hidden');
                 value_select.classList.add('hidden');
                 value_textarea.classList.add('hidden');
@@ -560,19 +566,16 @@ const PhlagManager = {
                     value_textarea.value = value_select.value;
                 }
 
-                if (jsoneditor_container) {
-                    jsoneditor_container.classList.remove('hidden');
+                if (json_preview) {
+                    json_preview.classList.remove('hidden');
                 }
 
-                // Update label to point to the JSON editor
+                // Update label to point to the edit button
                 if (value_label) {
-                    value_label.setAttribute('for', `env_value_jsoneditor_${env_id}`);
+                    value_label.setAttribute('for', `edit_json_${env_id}`);
                 }
 
-                const editor = this._getOrCreateJsonEditor(env_id);
-                if (editor) {
-                    editor.setText(value_textarea.value || '');
-                }
+                this._updateJsonPreview(env_id);
             } else if (is_string) {
                 // Show textarea, hide input and select
                 value_input.classList.add('hidden');
@@ -633,52 +636,144 @@ const PhlagManager = {
     },
 
     /**
-     * Gets or creates the JSONEditor instance for an environment's value
+     * Refreshes the read-only JSON preview shown for an environment
      *
-     * Lazily creates a JSONEditor (https://github.com/josdejong/jsoneditor)
-     * bound to the environment's mount point. Its content is mirrored into
-     * the environment's hidden textarea on every change, so the rest of the
-     * form (validation, extraction) keeps reading from that textarea exactly
-     * as it does for STRING values.
+     * Mirrors the environment's hidden textarea (the actual source of
+     * truth) into the truncated, single-line preview next to its
+     * "Edit JSON" button.
      *
      * @param {number} env_id - Environment ID
      *
-     * @return {JSONEditor|null} The editor instance, or null if the mount
-     *     point is missing or the JSONEditor library hasn't loaded
+     * @private
+     */
+    _updateJsonPreview: function(env_id) {
+        const preview_text = document.getElementById(`env_value_json_preview_text_${env_id}`);
+        const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
+
+        if (!preview_text || !value_textarea) {
+            return;
+        }
+
+        const value = value_textarea.value.trim();
+        preview_text.textContent = value || '(not configured)';
+        preview_text.classList.toggle('env-value-json-preview-empty', !value);
+    },
+
+    /**
+     * Opens the shared JSON editor modal for one environment's value
+     *
+     * Creates a fresh JSONEditor (https://github.com/josdejong/jsoneditor)
+     * inside the modal, seeded with the environment's current value.
+     * Nothing is written back to the environment until the user clicks
+     * "Done" - see _applyJsonEditorModal.
+     *
+     * @param {number} env_id - Environment ID
+     * @param {string} env_name - Environment name, shown in the modal title
      *
      * @private
      */
-    _getOrCreateJsonEditor: function(env_id) {
-        if (!this._json_editors) {
-            this._json_editors = {};
-        }
-
-        if (this._json_editors[env_id]) {
-            return this._json_editors[env_id];
-        }
-
-        const container = document.getElementById(`env_value_jsoneditor_${env_id}`);
-        if (!container || typeof JSONEditor === 'undefined') {
-            return null;
-        }
-
+    _openJsonEditorModal: function(env_id, env_name) {
+        const modal = document.getElementById('json-editor-modal');
+        const mount = document.getElementById('json-editor-mount');
+        const title = document.getElementById('json-editor-modal-title');
         const value_textarea = document.getElementById(`env_value_textarea_${env_id}`);
 
-        const editor = new JSONEditor(container, {
+        if (!modal || !mount || !value_textarea || typeof JSONEditor === 'undefined') {
+            return;
+        }
+
+        if (title) {
+            title.textContent = `Edit JSON Value — ${env_name}`;
+        }
+
+        this._json_editor_env_id = env_id;
+
+        modal.classList.remove('hidden');
+
+        // A CodeMirror-based editor created while its container is hidden (or left over
+        // from a previous open) renders with a stale, incorrect layout, so build it fresh
+        // each time the modal opens, after it's already visible.
+        if (this._modal_json_editor) {
+            this._modal_json_editor.destroy();
+        }
+
+        this._modal_json_editor = new JSONEditor(mount, {
             mode: 'code',
-            modes: ['code', 'tree', 'text'],
-            onChange: () => {
-                try {
-                    value_textarea.value = editor.getText();
-                } catch (e) {
-                    // Editor is mid-edit in an unparsable state; leave the textarea untouched.
-                }
+            modes: ['code', 'tree', 'text']
+        });
+        this._modal_json_editor.setText(value_textarea.value || '');
+    },
+
+    /**
+     * Closes the JSON editor modal without saving any changes
+     *
+     * @private
+     */
+    _closeJsonEditorModal: function() {
+        const modal = document.getElementById('json-editor-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+
+        if (this._modal_json_editor) {
+            this._modal_json_editor.destroy();
+            this._modal_json_editor = null;
+        }
+
+        this._json_editor_env_id = null;
+    },
+
+    /**
+     * Applies the JSON editor modal's content and closes it
+     *
+     * Writes the editor's current text back to the environment's hidden
+     * textarea (the actual source of truth used by validation and
+     * extraction) and refreshes its preview.
+     *
+     * @private
+     */
+    _applyJsonEditorModal: function() {
+        const env_id = this._json_editor_env_id;
+        const value_textarea = env_id !== null ? document.getElementById(`env_value_textarea_${env_id}`) : null;
+
+        if (value_textarea && this._modal_json_editor) {
+            try {
+                value_textarea.value = this._modal_json_editor.getText();
+            } catch (e) {
+                // Editor is mid-edit in an unparsable state; leave the textarea untouched.
+            }
+            this._updateJsonPreview(env_id);
+        }
+
+        this._closeJsonEditorModal();
+    },
+
+    /**
+     * Sets up the shared JSON editor modal's Done/Cancel/close handlers
+     *
+     * Idempotent - safe to call once during form initialization.
+     *
+     * @private
+     */
+    _initJsonEditorModal: function() {
+        const modal = document.getElementById('json-editor-modal');
+        if (!modal) {
+            return;
+        }
+
+        const done_btn = document.getElementById('json-editor-done-btn');
+        const cancel_btn = document.getElementById('json-editor-cancel-btn');
+        const close_x = modal.querySelector('.modal-close');
+
+        if (done_btn) done_btn.addEventListener('click', () => this._applyJsonEditorModal());
+        if (cancel_btn) cancel_btn.addEventListener('click', () => this._closeJsonEditorModal());
+        if (close_x) close_x.addEventListener('click', () => this._closeJsonEditorModal());
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this._closeJsonEditorModal();
             }
         });
-
-        this._json_editors[env_id] = editor;
-
-        return editor;
     },
     
     /**
@@ -1635,11 +1730,7 @@ const PhlagManager = {
                 value_select.value = ev.value || '';
             } else if (is_json && value_textarea) {
                 value_textarea.value = ev.value || '';
-
-                const editor = this._getOrCreateJsonEditor(env_id);
-                if (editor) {
-                    editor.setText(value_textarea.value);
-                }
+                this._updateJsonPreview(env_id);
             } else if (is_string && value_textarea) {
                 value_textarea.value = ev.value || '';
                 // Trigger auto-grow after setting value

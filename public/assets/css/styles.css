@@ -1589,12 +1589,44 @@ table td.hide-mobile:nth-child(5) {
     overflow-y: hidden;
 }
 
-/* JSON editor for JSON flags (https://github.com/josdejong/jsoneditor) */
-.env-value-jsoneditor {
-    height: 300px;
-    margin-bottom: 0.5rem;
-    resize: vertical;
+/* Read-only JSON value preview + "Edit JSON" button for JSON flags */
+/* :not(.hidden), not a bare .env-value-json-preview rule, so the shared .hidden
+   utility (display: none) always wins over this display: flex regardless of the
+   two classes' order in the stylesheet or in the element's class list. */
+.env-value-json-preview:not(.hidden) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.env-value-json-preview-text {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.env-value-json-preview-text.env-value-json-preview-empty {
+    color: #999;
+    font-style: italic;
+}
+
+/* Large modal variant for the JSON editor lightbox (https://github.com/josdejong/jsoneditor) */
+.modal-content.modal-large {
+    max-width: 900px;
+    width: 95%;
+}
+
+.json-editor-mount {
+    height: 65vh;
+    margin-bottom: 1rem;
 }
 
 /* Event type checkboxes */
