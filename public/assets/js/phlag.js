@@ -1510,9 +1510,9 @@ const PhlagManager = {
                 const display_value = env_value ? '<em>Disabled</em>' : '<em>Not configured</em>';
                 table_html += `
                     <tr class="env-not-configured">
-                        <td><strong>${this._escapeHtml(env.name)}</strong></td>
-                        <td>${display_value}</td>
-                        <td colspan="3">—</td>
+                        <td data-label="Environment"><strong>${this._escapeHtml(env.name)}</strong></td>
+                        <td data-label="Value">${display_value}</td>
+                        <td data-label="Details" colspan="3">—</td>
                     </tr>
                 `;
             } else {
@@ -1521,17 +1521,17 @@ const PhlagManager = {
                 if (phlag.type === 'SWITCH') {
                     display_value = env_value.value === 'true' ? '✓ true' : '✗ false';
                 }
-                
+
                 // Use update_datetime or fall back to create_datetime
                 const updated_datetime = env_value.update_datetime || env_value.create_datetime;
-                
+
                 table_html += `
                     <tr>
-                        <td><strong>${this._escapeHtml(env.name)}</strong></td>
-                        <td><code>${this._escapeHtml(display_value)}</code></td>
-                        <td>${this._formatDate(env_value.start_datetime)}</td>
-                        <td>${this._formatDate(env_value.end_datetime)}</td>
-                        <td>${this._formatDate(updated_datetime)}</td>
+                        <td data-label="Environment"><strong>${this._escapeHtml(env.name)}</strong></td>
+                        <td data-label="Value"><code>${this._escapeHtml(display_value)}</code></td>
+                        <td data-label="Start Date/Time">${this._formatDate(env_value.start_datetime)}</td>
+                        <td data-label="End Date/Time">${this._formatDate(env_value.end_datetime)}</td>
+                        <td data-label="Updated">${this._formatDate(updated_datetime)}</td>
                     </tr>
                 `;
             }

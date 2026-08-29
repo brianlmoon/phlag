@@ -414,6 +414,55 @@ table td.hide-mobile:nth-child(5) {
     white-space: nowrap;
 }
 
+/* Environment values table: flex to a stacked card layout when narrow */
+@media (max-width: 600px) {
+    .environment-values-table,
+    .environment-values-table tbody,
+    .environment-values-table tr,
+    .environment-values-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .environment-values-table thead {
+        display: none;
+    }
+
+    .environment-values-table tr {
+        margin-top: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .environment-values-table tr:first-child {
+        margin-top: 0;
+    }
+
+    .environment-values-table td {
+        position: relative;
+        padding: 0.5rem 0.75rem 0.5rem 45%;
+        text-align: right;
+        border-bottom: 1px solid #eee;
+    }
+
+    .environment-values-table td:last-child {
+        border-bottom: none;
+    }
+
+    .environment-values-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.75rem;
+        width: calc(45% - 1.5rem);
+        text-align: left;
+        font-weight: 600;
+        color: #2c3e50;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 .flag-description {
     font-size: 0.875rem;
     color: #666;
