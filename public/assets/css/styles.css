@@ -414,6 +414,38 @@ table td.hide-mobile:nth-child(5) {
     white-space: nowrap;
 }
 
+/* Environment values table: truncate long values instead of wrapping */
+@media (min-width: 601px) {
+    .environment-values-table {
+        table-layout: fixed;
+    }
+
+    .environment-values-table th:nth-child(1),
+    .environment-values-table td:nth-child(1) {
+        width: 15%;
+    }
+
+    .environment-values-table th:nth-child(2),
+    .environment-values-table td:nth-child(2) {
+        width: 40%;
+    }
+
+    .environment-values-table th:nth-child(3),
+    .environment-values-table td:nth-child(3),
+    .environment-values-table th:nth-child(4),
+    .environment-values-table td:nth-child(4),
+    .environment-values-table th:nth-child(5),
+    .environment-values-table td:nth-child(5) {
+        width: 15%;
+    }
+
+    .environment-values-table td:nth-child(2) {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
 /* Environment values table: flex to a stacked card layout when narrow */
 @media (max-width: 600px) {
     .environment-values-table,
