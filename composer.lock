@@ -227,16 +227,16 @@
         },
         {
             "name": "dealnews/get-config",
-            "version": "v2.2.0",
+            "version": "v2.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/dealnews/get-config.git",
-                "reference": "b505d158a2faa71420f30d2ee9b2b0acc871b8ff"
+                "reference": "9d7129106f67f80d22fab388542d448996a373f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/dealnews/get-config/zipball/b505d158a2faa71420f30d2ee9b2b0acc871b8ff",
-                "reference": "b505d158a2faa71420f30d2ee9b2b0acc871b8ff",
+                "url": "https://api.github.com/repos/dealnews/get-config/zipball/9d7129106f67f80d22fab388542d448996a373f2",
+                "reference": "9d7129106f67f80d22fab388542d448996a373f2",
                 "shasum": ""
             },
             "require": {
@@ -261,9 +261,9 @@
             "description": "A PHP library for reading settings from environment variables or an ini file.",
             "support": {
                 "issues": "https://github.com/dealnews/get-config/issues",
-                "source": "https://github.com/dealnews/get-config/tree/v2.2.0"
+                "source": "https://github.com/dealnews/get-config/tree/v2.2.1"
             },
-            "time": "2025-09-30T23:58:35+00:00"
+            "time": "2026-09-08T17:33:46+00:00"
         },
         {
             "name": "dealnews/repository",
